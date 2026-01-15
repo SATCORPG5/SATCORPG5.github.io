@@ -3,26 +3,28 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SATCORP // ORBITAL INTERFACE</title>
-  <meta name="description" content="SATCORP // ORBITAL INTERFACE — Sovereign Systems Architecture" />
+  <title>SATCORP // HYPΞRION HUD</title>
+  <meta name="description" content="SATCORP COMMAND INTERFACE — KYRAX ACTIVE" />
   <meta name="theme-color" content="#07070a" />
-
   <style>
     :root{
       --obsidian:#07070a;
-      --panel: rgba(10,12,18,.62);
-      --panel2: rgba(7,9,14,.72);
-      --line: rgba(255,255,255,.10);
-      --soft: rgba(255,255,255,.06);
-      --text: #eef0f6;
+      --panel:#0b0c11;
+      --panel2:#090a0f;
+      --text:#eef0f6;
       --muted:#a9afc2;
-      --violet:#9b5de5;   /* plasma violet */
-      --cyan:#2ee9ff;     /* signal cyan */
-      --danger:#ff2b57;   /* red alert */
-      --radius: 18px;
+      --line: rgba(255,255,255,.12);
+      --line2: rgba(255,255,255,.07);
+      --violet:#9b5de5;     /* Plasma Violet */
+      --cyan:#2ee9ff;       /* Signal Cyan */
+      --warn:#f7c948;       /* warning stripe */
+      --danger:#ff2b57;
+      --radius: 14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
       --shadow: 0 18px 70px rgba(0,0,0,.55);
-      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      --glowV: 0 0 26px rgba(155,93,229,.25);
+      --glowC: 0 0 24px rgba(46,233,255,.18);
     }
 
     *{ box-sizing:border-box; }
@@ -35,1217 +37,1164 @@
       overflow:hidden;
     }
 
-    /* Canvas fills screen */
-    #scene{
+    /* Background layers */
+    .bg{
       position:fixed; inset:0;
-      width:100%; height:100%;
-      display:block;
-      background: radial-gradient(1100px 700px at 20% 20%, rgba(155,93,229,.14), transparent 60%),
-                  radial-gradient(900px 520px at 80% 25%, rgba(46,233,255,.08), transparent 60%),
-                  linear-gradient(180deg, #06060a, #040408);
+      background:
+        radial-gradient(1100px 760px at 18% 20%, rgba(155,93,229,.10), transparent 62%),
+        radial-gradient(1100px 760px at 82% 35%, rgba(46,233,255,.06), transparent 62%),
+        linear-gradient(180deg, #06060a, #040408);
+      z-index:0;
     }
 
-    /* Soft scanlines / noise */
-    .fx{
+    /* Animated scanlines + faint noise */
+    .scanlines{
       position:fixed; inset:0;
       pointer-events:none;
+      z-index:1;
       background:
-        repeating-linear-gradient(to bottom, rgba(255,255,255,.04) 0px, rgba(255,255,255,.04) 1px, transparent 2px, transparent 7px);
+        repeating-linear-gradient(to bottom,
+          rgba(255,255,255,.045) 0px,
+          rgba(255,255,255,.045) 1px,
+          transparent 2px,
+          transparent 8px);
       opacity:.07;
       mix-blend-mode:overlay;
+      animation: scan 7.5s linear infinite;
+    }
+    @keyframes scan{
+      0%{ transform: translateY(0); }
+      100%{ transform: translateY(10px); }
+    }
+
+    /* Grid distortion (subtle) */
+    .grid{
+      position:fixed; inset:0;
+      pointer-events:none;
+      z-index:2;
+      opacity:.10;
+      background:
+        repeating-linear-gradient(to right, rgba(155,93,229,.10) 0px, rgba(155,93,229,.10) 1px, transparent 1px, transparent 40px),
+        repeating-linear-gradient(to bottom, rgba(46,233,255,.07) 0px, rgba(46,233,255,.07) 1px, transparent 1px, transparent 40px);
+      filter: blur(.2px);
+      animation: gridDrift 12s linear infinite;
+    }
+    @keyframes gridDrift{
+      0%{ transform: translate3d(0,0,0); }
+      100%{ transform: translate3d(-40px, 20px, 0); }
+    }
+
+    /* HUD noise speckle */
+    .noise{
+      position:fixed; inset:0;
+      pointer-events:none;
+      z-index:3;
+      background-image:
+        radial-gradient(circle at 20% 30%, rgba(255,255,255,.05) 0 1px, transparent 1px),
+        radial-gradient(circle at 70% 55%, rgba(255,255,255,.045) 0 1px, transparent 1px),
+        radial-gradient(circle at 40% 80%, rgba(255,255,255,.04) 0 1px, transparent 1px);
+      background-size: 220px 220px;
+      opacity:.16;
+      mix-blend-mode:overlay;
+      animation: noiseShift 9s linear infinite;
+    }
+    @keyframes noiseShift{
+      0%{ transform: translate3d(0,0,0); }
+      100%{ transform: translate3d(-60px, 40px, 0); }
     }
 
     /* Landing overlay */
     .landing{
       position:fixed; inset:0;
+      z-index:50;
       display:grid;
       place-items:center;
-      z-index:50;
-      pointer-events:auto;
-      background: radial-gradient(900px 500px at 50% 45%, rgba(155,93,229,.10), transparent 65%),
-                  radial-gradient(1200px 900px at 50% 60%, rgba(0,0,0,.55), rgba(0,0,0,.86));
-      transition: opacity 900ms ease, transform 900ms ease;
+      background: radial-gradient(900px 600px at 50% 45%, rgba(155,93,229,.10), rgba(0,0,0,.88));
+      transition: opacity 700ms linear;
     }
-    .landing.hidden{
-      opacity:0;
-      pointer-events:none;
-      transform: scale(1.01);
-    }
+    .landing.hidden{ opacity:0; pointer-events:none; }
 
     .landingCard{
       width:min(920px, 92vw);
-      padding: 26px 22px;
-      border-radius: var(--radius);
-      border: 1px solid var(--soft);
-      background: linear-gradient(180deg, rgba(10,12,18,.55), rgba(7,9,14,.55));
+      border: 1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(10,12,18,.62), rgba(7,9,14,.62));
       box-shadow: var(--shadow);
-      position:relative;
+      border-radius: var(--radius);
       overflow:hidden;
     }
-    .landingCard::before{
-      content:"";
-      position:absolute; inset:-2px;
-      background:
-        radial-gradient(520px 240px at 25% 20%, rgba(155,93,229,.14), transparent 60%),
-        radial-gradient(520px 240px at 80% 40%, rgba(46,233,255,.10), transparent 60%);
-      pointer-events:none;
-      opacity:.9;
-    }
-    .landingCard > *{ position:relative; }
-
-    .sig{
-      display:flex; align-items:center; justify-content:space-between; gap:14px;
+    .landingHead{
+      padding: 16px 18px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:baseline;
       font-family: var(--mono);
       letter-spacing:.18em;
       text-transform:uppercase;
-      color: rgba(238,240,246,.85);
       font-size: 11px;
+      color: rgba(169,175,194,.95);
     }
-    .sig .left{ display:flex; gap:10px; align-items:center; }
-    .pip{
-      width:8px; height:8px; border-radius:999px;
-      background: var(--violet);
-      box-shadow: 0 0 0 4px rgba(155,93,229,.14), 0 0 30px rgba(155,93,229,.35);
-    }
-    .sig .right{
-      color: rgba(169,175,194,.9);
-    }
-
-    .titleBlock{
-      margin-top: 20px;
+    .landingBody{
+      padding: 18px;
       display:grid;
-      grid-template-columns: 1.3fr .7fr;
-      gap: 18px;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 16px;
       align-items:end;
     }
-
-    .big{
+    .h1{
       margin: 0;
-      font-size: clamp(40px, 6vw, 64px);
-      line-height: 1;
-      letter-spacing: .06em;
-      text-transform:uppercase;
+      font-size: clamp(28px, 4.4vw, 40px);
       font-weight: 900;
+      letter-spacing:.14em;
+      text-transform:uppercase;
     }
-    .sub{
+    .h2{
       margin: 10px 0 0;
-      color: var(--muted);
+      color: rgba(169,175,194,.95);
       font-family: var(--mono);
-      letter-spacing:.06em;
-      line-height:1.6;
-      font-size: 13px;
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      font-size: 12px;
+      line-height: 1.6;
     }
 
-    .enterRow{
+    .typebox{
+      border: 1px solid rgba(155,93,229,.25);
+      background: rgba(0,0,0,.18);
+      border-radius: 12px;
+      padding: 12px;
+      font-family: var(--mono);
+      color: rgba(238,240,246,.94);
+      box-shadow: var(--glowV);
+      min-height: 122px;
+    }
+    .typebox .label{
+      color: rgba(169,175,194,.9);
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      font-size: 10px;
+      margin-bottom: 8px;
+    }
+    .typebox pre{
+      margin:0;
+      white-space:pre-wrap;
+      line-height:1.55;
+      font-size: 12px;
+    }
+    .violet{ color: rgba(155,93,229,.95); text-shadow: var(--glowV); }
+
+    .initRow{
       display:flex;
       flex-direction:column;
-      gap:10px;
       align-items:flex-end;
-      text-align:right;
+      gap:10px;
+      padding-top: 6px;
     }
-
-    .cta{
+    .btn{
       display:inline-flex;
       align-items:center;
       gap:10px;
       padding: 12px 16px;
       border-radius: 999px;
-      border: 1px solid rgba(155,93,229,.35);
+      border: 1px solid rgba(46,233,255,.22);
       background: rgba(0,0,0,.16);
-      color: var(--text);
+      color: rgba(238,240,246,.95);
       font-family: var(--mono);
-      letter-spacing:.16em;
+      letter-spacing:.14em;
       text-transform:uppercase;
       font-weight: 900;
       font-size: 12px;
       cursor:pointer;
-      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+      transition: opacity .15s linear, transform .15s linear, border-color .15s linear;
       user-select:none;
+      box-shadow: var(--glowC);
+      animation: pulse 1.45s linear infinite;
     }
-    .cta:hover{
-      transform: translateY(-1px);
-      border-color: rgba(155,93,229,.65);
-      box-shadow: 0 0 0 3px rgba(155,93,229,.10);
+    @keyframes pulse{
+      0%,100%{ transform: translateY(0); opacity:.92; }
+      50%{ transform: translateY(-1px); opacity:1; }
     }
-
+    .btn:hover{ border-color: rgba(46,233,255,.55); }
     .hint{
-      color: rgba(169,175,194,.9);
       font-family: var(--mono);
+      color: rgba(169,175,194,.9);
       font-size: 11px;
       letter-spacing:.10em;
       text-transform:uppercase;
     }
 
-    /* HUD */
+    /* HUD container */
     .hud{
       position:fixed; inset:0;
       z-index:10;
-      pointer-events:none;
+      padding: 14px;
+      display:grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 10px;
       opacity:0;
-      transform: translateY(6px);
-      transition: opacity 800ms ease, transform 800ms ease;
+      transform: translateY(3px);
+      transition: opacity 420ms linear, transform 420ms linear;
+      pointer-events:none;
     }
     .hud.on{
       opacity:1;
       transform: translateY(0);
-      pointer-events:none;
+      pointer-events:auto;
     }
 
-    .topHUD{
-      position:absolute;
-      left:18px; right:18px; top:16px;
+    /* Framing panels */
+    .frame{
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(10,12,18,.50), rgba(7,9,14,.50));
+      box-shadow: 0 14px 55px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+
+    /* TOP BAR */
+    .topbar{
       display:flex;
       justify-content:space-between;
-      gap:12px;
-      align-items:flex-start;
-    }
-
-    .brandHUD{
-      pointer-events:auto;
-      display:flex; align-items:center; gap:10px;
-      padding: 10px 12px;
-      border-radius: 999px;
-      border: 1px solid var(--soft);
-      background: rgba(0,0,0,.22);
-      backdrop-filter: blur(10px);
+      gap:10px;
+      align-items:center;
+      padding: 12px 14px;
       font-family: var(--mono);
-      letter-spacing:.18em;
+      letter-spacing:.14em;
       text-transform:uppercase;
       font-weight: 900;
-      font-size: 12px;
-      user-select:none;
-      cursor:default;
-      position:relative;
+      font-size: 11px;
     }
-    .brandMark{
+    .topbar .left{
+      display:flex; gap:10px; align-items:center;
+      cursor:pointer;
+      user-select:none;
+    }
+    .logoMark{
       width:10px; height:10px; border-radius:999px;
       background: var(--violet);
-      box-shadow: 0 0 0 4px rgba(155,93,229,.14), 0 0 22px rgba(155,93,229,.28);
+      box-shadow: 0 0 0 4px rgba(155,93,229,.12), 0 0 22px rgba(155,93,229,.22);
+    }
+    .topbar .mid{ color: rgba(169,175,194,.95); }
+    .topbar .right{
+      color: rgba(46,233,255,.9);
+      text-shadow: var(--glowC);
     }
 
-    .statusHUD{
-      width:min(520px, 58vw);
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid var(--soft);
-      background: linear-gradient(180deg, rgba(10,12,18,.50), rgba(7,9,14,.50));
-      backdrop-filter: blur(10px);
-      box-shadow: 0 14px 45px rgba(0,0,0,.35);
-      font-family: var(--mono);
-    }
-    .statusRow{
-      display:flex; justify-content:space-between; gap:10px;
-      padding: 7px 2px;
-      border-bottom: 1px dashed rgba(255,255,255,.10);
-      font-size: 11px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      color: rgba(169,175,194,.95);
-    }
-    .statusRow:last-child{ border-bottom:none; }
-    .val{
-      color: rgba(238,240,246,.95);
-      font-weight: 900;
-    }
-    .pulse{
-      display:inline-flex; align-items:center; gap:8px;
-    }
-    .pulseDot{
-      width:7px; height:7px; border-radius:999px;
-      background: var(--cyan);
-      box-shadow: 0 0 0 4px rgba(46,233,255,.10), 0 0 18px rgba(46,233,255,.25);
-      animation: blink 2.2s ease-in-out infinite;
-    }
-    @keyframes blink{
-      0%,100%{ opacity:.5; transform: scale(.92); }
-      50%{ opacity:1; transform: scale(1.05); }
+    /* MAIN GRID */
+    .main{
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      gap:10px;
+      min-height: 0;
     }
 
-    /* Bottom info rail */
-    .bottomHUD{
-      position:absolute;
-      left:18px; right:18px; bottom:16px;
+    /* LEFT PANEL */
+    .leftPanel{
       display:flex;
-      justify-content:space-between;
-      gap: 12px;
-      align-items:flex-end;
+      flex-direction:column;
+      min-height: 0;
     }
-    .rail{
-      pointer-events:auto;
+    .panelHead{
       padding: 12px 14px;
-      border-radius: 14px;
-      border: 1px solid var(--soft);
-      background: linear-gradient(180deg, rgba(10,12,18,.44), rgba(7,9,14,.44));
-      backdrop-filter: blur(10px);
-      max-width: 680px;
-      box-shadow: 0 14px 45px rgba(0,0,0,.35);
-    }
-    .railTitle{
+      border-bottom: 1px solid rgba(255,255,255,.10);
       font-family: var(--mono);
       letter-spacing:.18em;
       text-transform:uppercase;
+      font-weight: 900;
       font-size: 11px;
       color: rgba(169,175,194,.95);
+      display:flex; justify-content:space-between; gap:10px;
+      align-items:center;
+    }
+    .kyr{
+      color: rgba(155,93,229,.95);
+      text-shadow: var(--glowV);
+    }
+
+    .modules{
+      padding: 10px;
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+      overflow:auto;
+    }
+
+    .mod{
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.14);
+      font-family: var(--mono);
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      font-size: 12px;
+      font-weight: 900;
+      color: rgba(238,240,246,.92);
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+      cursor:pointer;
+      transition: border-color .12s linear, box-shadow .12s linear, filter .12s linear;
+      user-select:none;
+    }
+    .mod:hover{
+      border-color: rgba(46,233,255,.35);
+      box-shadow: 0 0 0 3px rgba(46,233,255,.08);
+      filter: contrast(1.02);
+    }
+    .mod.active{
+      border-color: rgba(155,93,229,.48);
+      box-shadow: 0 0 0 3px rgba(155,93,229,.10);
+    }
+    .arm{
+      color: rgba(46,233,255,.85);
+      text-shadow: var(--glowC);
+      font-size: 11px;
+    }
+
+    /* MAIN VIEWPORT */
+    .viewport{
+      position:relative;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+    }
+    .viewportHead{
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
       display:flex;
       justify-content:space-between;
       gap:10px;
       align-items:baseline;
-      margin-bottom: 6px;
-    }
-    .railBody{
-      color: rgba(238,240,246,.92);
-      font-size: 14px;
-      line-height: 1.55;
-    }
-    .hoverNote{
-      margin-top: 10px;
-      color: rgba(169,175,194,.9);
       font-family: var(--mono);
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      font-weight: 900;
       font-size: 11px;
+      color: rgba(169,175,194,.95);
+    }
+    .viewportHead .mode{
+      color: rgba(238,240,246,.92);
+    }
+    .viewportBody{
+      padding: 14px;
+      overflow:auto;
+      min-height:0;
+    }
+
+    /* Flicker on module switch */
+    .flicker{
+      position:absolute; inset:0;
+      background: rgba(255,255,255,.06);
+      mix-blend-mode:overlay;
+      opacity:0;
+      pointer-events:none;
+    }
+    .flicker.on{
+      animation: flick 200ms linear 1;
+    }
+    @keyframes flick{
+      0%{ opacity:0; }
+      20%{ opacity:.22; }
+      55%{ opacity:.05; }
+      100%{ opacity:0; }
+    }
+
+    /* Content styles */
+    .sealWrap{
+      display:flex;
+      gap: 14px;
+      align-items:center;
+      flex-wrap:wrap;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.14);
+    }
+    .seal{
+      width: 86px; height: 86px;
+      border-radius: 999px;
+      border: 1px solid rgba(155,93,229,.40);
+      position:relative;
+      box-shadow: var(--glowV);
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255,255,255,.10), transparent 55%),
+        radial-gradient(circle at 70% 70%, rgba(46,233,255,.08), transparent 60%),
+        linear-gradient(180deg, rgba(155,93,229,.18), rgba(0,0,0,.12));
+      animation: slowSpin 10s linear infinite;
+    }
+    @keyframes slowSpin{
+      0%{ transform: rotate(0deg); }
+      100%{ transform: rotate(360deg); }
+    }
+    .seal::after{
+      content:"";
+      position:absolute; inset:14px;
+      border-radius: 999px;
+      border: 1px dashed rgba(46,233,255,.22);
+      opacity:.9;
+    }
+    .readouts{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(160px, 1fr));
+      gap: 10px;
+      flex:1;
+      min-width: 260px;
+    }
+    .ro{
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.12);
+      padding: 10px 10px;
+      font-family: var(--mono);
+    }
+    .ro .k{
+      color: rgba(169,175,194,.95);
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      font-size: 10px;
+      margin-bottom: 8px;
+    }
+    .ro .v{
+      font-weight: 900;
       letter-spacing:.08em;
       text-transform:uppercase;
-      display:none;
+      font-size: 12px;
+      color: rgba(238,240,246,.92);
     }
-    .railBody:hover + .hoverNote{ display:block; }
 
-    .toggles{
-      pointer-events:auto;
+    .decl{
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(155,93,229,.22);
+      background: rgba(0,0,0,.14);
+      font-family: var(--mono);
+      letter-spacing:.08em;
+      line-height:1.7;
+      text-transform:uppercase;
+    }
+    .whisper{
+      margin-top: 10px;
+      font-family: var(--mono);
+      color: rgba(155,93,229,.90);
+      text-shadow: var(--glowV);
+      letter-spacing:.08em;
+    }
+
+    /* Systems blocks */
+    .blocks{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(220px, 1fr));
+      gap: 10px;
+    }
+    .block{
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.12);
+      padding: 12px;
+      font-family: var(--mono);
+      cursor:pointer;
+      user-select:none;
+      transition: border-color .12s linear, box-shadow .12s linear;
+      position:relative;
+      overflow:hidden;
+    }
+    .block:hover{
+      border-color: rgba(46,233,255,.35);
+      box-shadow: 0 0 0 3px rgba(46,233,255,.08);
+    }
+    .block .t{
+      font-weight: 900;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      font-size: 12px;
+    }
+    .block .s{
+      margin-top: 6px;
+      color: rgba(169,175,194,.95);
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      font-size: 10px;
+    }
+    .drawer{
+      margin-top: 10px;
+      display:none;
+      border-top: 1px dashed rgba(255,255,255,.12);
+      padding-top: 10px;
+      color: rgba(238,240,246,.92);
+      font-size: 12px;
+      line-height:1.6;
+    }
+    .block.open .drawer{ display:block; }
+
+    /* Services modules */
+    .deploy{
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.12);
+      padding: 12px;
+      font-family: var(--mono);
       display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      margin-bottom: 10px;
+    }
+    .deploy .left{
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+    }
+    .deploy .name{
+      font-weight: 900;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      font-size: 12px;
+    }
+    .deploy .meta{
+      color: rgba(169,175,194,.95);
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      font-size: 10px;
+    }
+    .deployBtn{
+      border: 1px solid rgba(155,93,229,.35);
+      background: rgba(0,0,0,.14);
+      color: rgba(238,240,246,.95);
+      font-family: var(--mono);
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      font-weight: 900;
+      font-size: 11px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      cursor:pointer;
+      transition: border-color .12s linear, box-shadow .12s linear;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .deployBtn:hover{
+      border-color: rgba(155,93,229,.65);
+      box-shadow: 0 0 0 3px rgba(155,93,229,.10);
+    }
+
+    /* Phase III classified */
+    .classified{
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.12);
+      overflow:hidden;
+      font-family: var(--mono);
+    }
+    .stripe{
+      padding: 10px 12px;
+      background: repeating-linear-gradient(135deg, rgba(247,201,72,.18) 0px, rgba(247,201,72,.18) 10px, rgba(0,0,0,.14) 10px, rgba(0,0,0,.14) 20px);
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      font-weight: 900;
+      font-size: 11px;
+    }
+    .phaseBody{
+      padding: 12px;
+      color: rgba(238,240,246,.92);
+      line-height:1.7;
+      font-size: 12px;
+      min-height: 140px;
+      white-space:pre-wrap;
+    }
+
+    /* Bottom status bar */
+    .bottombar{
+      display:flex;
+      justify-content:space-between;
       gap:10px;
       align-items:center;
       padding: 10px 12px;
-      border-radius: 999px;
-      border: 1px solid var(--soft);
-      background: rgba(0,0,0,.22);
-      backdrop-filter: blur(10px);
       font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing:.14em;
+      letter-spacing:.12em;
       text-transform:uppercase;
+      font-size: 10px;
       color: rgba(169,175,194,.95);
-      user-select:none;
     }
-    .toggleBtn{
-      cursor:pointer;
+    .bottombar .stat{
+      display:flex;
+      gap:8px;
+      align-items:center;
       padding: 8px 10px;
       border-radius: 999px;
       border: 1px solid rgba(255,255,255,.10);
       background: rgba(0,0,0,.12);
-      color: rgba(238,240,246,.92);
-      font-weight:900;
-      transition: .18s ease;
+      white-space:nowrap;
     }
-    .toggleBtn:hover{
-      border-color: rgba(155,93,229,.55);
-      box-shadow: 0 0 0 3px rgba(155,93,229,.10);
+    .dot{
+      width:7px; height:7px; border-radius:999px;
+      background: var(--cyan);
+      box-shadow: 0 0 0 4px rgba(46,233,255,.10), 0 0 18px rgba(46,233,255,.22);
+      animation: blink 2.2s linear infinite;
+    }
+    @keyframes blink{
+      0%,100%{ opacity:.55; transform: scale(.94); }
+      50%{ opacity:1; transform: scale(1.05); }
     }
 
-    /* Hidden overlays */
+    /* KYRAX layer messages */
+    .kyrMsg{
+      position:fixed;
+      right: 16px;
+      bottom: 70px;
+      z-index:30;
+      pointer-events:none;
+      max-width: min(560px, 88vw);
+      border-radius: 12px;
+      border: 1px solid rgba(155,93,229,.25);
+      background: rgba(0,0,0,.18);
+      padding: 10px 12px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing:.08em;
+      color: rgba(238,240,246,.92);
+      box-shadow: var(--glowV);
+      opacity:0;
+      transform: translateY(6px);
+      transition: opacity 220ms linear, transform 220ms linear;
+    }
+    .kyrMsg.on{
+      opacity:1;
+      transform: translateY(0);
+    }
+    .kyrMsg .k{
+      color: rgba(155,93,229,.95);
+      text-shadow: var(--glowV);
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      font-weight: 900;
+      font-size: 10px;
+      margin-bottom: 6px;
+    }
+
+    /* Hidden console */
     .overlay{
       position:fixed; inset:0;
       z-index:80;
       display:none;
       place-items:center;
-      background: radial-gradient(900px 600px at 50% 40%, rgba(155,93,229,.14), rgba(0,0,0,.88));
-      padding: 18px;
+      background: radial-gradient(900px 600px at 50% 45%, rgba(155,93,229,.10), rgba(0,0,0,.90));
+      padding: 14px;
     }
     .overlay.show{ display:grid; }
-    .overlayCard{
-      width:min(840px, 92vw);
+    .console{
+      width:min(900px, 94vw);
       border-radius: var(--radius);
       border: 1px solid rgba(255,255,255,.12);
-      background: linear-gradient(180deg, rgba(10,12,18,.66), rgba(7,9,14,.66));
+      background: linear-gradient(180deg, rgba(10,12,18,.70), rgba(7,9,14,.70));
       box-shadow: var(--shadow);
-      padding: 18px;
+      overflow:hidden;
       font-family: var(--mono);
     }
-    .overlayTitle{
-      letter-spacing:.22em;
+    .consoleHead{
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      display:flex; justify-content:space-between; gap:10px; align-items:baseline;
+      letter-spacing:.18em;
       text-transform:uppercase;
-      font-weight:900;
-      font-size: 12px;
+      font-weight: 900;
+      font-size: 11px;
       color: rgba(169,175,194,.95);
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      align-items:baseline;
-      margin-bottom: 10px;
     }
-    .overlayBody{
-      color: rgba(238,240,246,.95);
-      font-size: 13px;
-      line-height: 1.7;
+    .consoleBody{
+      padding: 12px 14px;
+      color: rgba(238,240,246,.92);
+      line-height:1.7;
+      font-size: 12px;
       white-space:pre-wrap;
+      min-height: 220px;
     }
-    .overlayClose{
+    .closeBtn{
       cursor:pointer;
-      padding: 8px 10px;
-      border-radius: 999px;
       border: 1px solid rgba(255,255,255,.14);
-      background: rgba(0,0,0,.12);
+      background: rgba(0,0,0,.14);
       color: rgba(238,240,246,.92);
-      font-weight:900;
-    }
-
-    /* “Red Alert” mode */
-    body.red-alert{
-      --violet: var(--danger);
-      --cyan:  #ff9aa8;
-    }
-    body.red-alert #scene{
-      filter: saturate(1.05) contrast(1.02);
-    }
-
-    /* Accessibility fallback if WebGL fails */
-    .fallback{
-      position:fixed; inset:0;
-      z-index:5;
-      display:none;
-      place-items:center;
-      padding:18px;
-      text-align:center;
-      color: rgba(238,240,246,.92);
-      background: radial-gradient(900px 600px at 50% 40%, rgba(155,93,229,.10), rgba(0,0,0,.88));
+      border-radius: 999px;
+      padding: 8px 10px;
       font-family: var(--mono);
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      font-weight: 900;
+      font-size: 11px;
     }
-    .fallback.show{ display:grid; }
-    .fallback p{ max-width:70ch; line-height:1.7; color: rgba(169,175,194,.95); }
+
+    /* Night shift */
+    body.night{
+      --cyan:#ff9bd8;
+    }
+
+    /* Responsive */
+    @media (max-width: 980px){
+      .main{ grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px){
+      .landingBody{ grid-template-columns: 1fr; }
+      .readouts{ grid-template-columns: 1fr; }
+      .blocks{ grid-template-columns: 1fr; }
+      .bottombar{ flex-wrap:wrap; justify-content:flex-start; }
+    }
   </style>
 </head>
 
 <body>
-  <canvas id="scene" aria-label="SATCORP orbital interface background"></canvas>
-  <div class="fx" aria-hidden="true"></div>
-
-  <div class="fallback" id="fallback">
-    <div>
-      <div style="letter-spacing:.22em;text-transform:uppercase;font-weight:900;">SATCORP // FALLBACK MODE</div>
-      <h1 style="margin:12px 0 8px;letter-spacing:.08em;">Orbital Interface Unavailable</h1>
-      <p>WebGL is disabled or unsupported. You can still use the system: enable WebGL or try a modern browser.</p>
-    </div>
-  </div>
+  <div class="bg"></div>
+  <div class="scanlines" aria-hidden="true"></div>
+  <div class="grid" aria-hidden="true"></div>
+  <div class="noise" aria-hidden="true"></div>
 
   <!-- LANDING -->
   <section class="landing" id="landing">
     <div class="landingCard">
-      <div class="sig">
-        <div class="left"><span class="pip" aria-hidden="true"></span> SATCORP // ORBITAL INTERFACE</div>
-        <div class="right">Operator session: <span id="sessionLabel">INIT</span></div>
+      <div class="landingHead">
+        <span>HYPΞRION SYSTEM</span>
+        <span style="color:rgba(46,233,255,.90);text-shadow:var(--glowC);">HUD NOISE: ACTIVE</span>
       </div>
 
-      <div class="titleBlock">
+      <div class="landingBody">
         <div>
-          <h1 class="big">SATCORP</h1>
-          <p class="sub">Sovereign Systems Architecture</p>
-          <p class="sub" id="landingLine" style="margin-top:16px;max-width:70ch;">
-            Your website isn’t pages. It’s a system the visitor enters.
-          </p>
+          <div class="h1">SATCORP COMMAND INTERFACE</div>
+          <div class="h2">INTERFACE-FIRST • OBSERVED BY KYRAX</div>
         </div>
 
-        <div class="enterRow">
-          <button class="cta" id="enterBtn" type="button">ENTER ORBIT</button>
-          <div class="hint">Audio is optional • Toggle in HUD</div>
+        <div>
+          <div class="typebox">
+            <div class="label">KYRAX CHANNEL</div>
+            <pre id="typeOut"><span class="violet">> </span></pre>
+          </div>
+
+          <div class="initRow">
+            <button class="btn" id="initBtn" type="button">▶ INITIALIZE INTERFACE</button>
+            <div class="hint">Shift+Click Logo → Observer Mode • Type “KYRAX” → Console</div>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
+  <!-- KYRAX pop-up message -->
+  <div class="kyrMsg" id="kyrMsg">
+    <div class="k">KYRAX</div>
+    <div id="kyrText">Irrelevant data omitted.</div>
+  </div>
+
   <!-- HUD -->
   <div class="hud" id="hud">
-    <div class="topHUD">
-      <div class="brandHUD" id="brandHUD" title="Hold for 5 seconds">
-        <span class="brandMark" aria-hidden="true"></span>
-        <span>SATCORP</span>
-        <span style="color:rgba(169,175,194,.9);font-weight:900;">//</span>
-        <span style="color:rgba(169,175,194,.95);font-weight:900;">CORE</span>
-      </div>
-
-      <div class="statusHUD" aria-label="System Status">
-        <div class="statusRow">
-          <span class="pulse"><span class="pulseDot" aria-hidden="true"></span> SYSTEM STATUS</span>
-          <span class="val" id="sysStatus">STABLE</span>
+    <!-- Top bar -->
+    <div class="frame">
+      <div class="topbar">
+        <div class="left" id="logoBtn" title="Shift+Click for Observer Mode">
+          <span class="logoMark" aria-hidden="true"></span>
+          <span>SATCORP</span>
         </div>
-        <div class="statusRow">
-          <span>ORBITAL MASS</span>
-          <span class="val" id="massVal">GAINING</span>
-        </div>
-        <div class="statusRow">
-          <span>SIGNAL REACH</span>
-          <span class="val" id="signalVal">EXPANDING</span>
-        </div>
+        <div class="mid">HYPΞRION HUD</div>
+        <div class="right">KYRAX: ACTIVE</div>
       </div>
     </div>
 
-    <div class="bottomHUD">
-      <div class="rail" id="rail">
-        <div class="railTitle">
-          <span id="nodeTitle">🜂 SATCORP CORE</span>
-          <span id="gateLabel" style="color:rgba(169,175,194,.95);">ACCESS: OPEN</span>
+    <!-- Main -->
+    <div class="main">
+      <!-- Left panel -->
+      <div class="frame leftPanel">
+        <div class="panelHead">
+          <span>MODULE STACK</span>
+          <span class="kyr">KYRAX ONLINE</span>
         </div>
-        <div class="railBody" id="nodeBody">
-          Enter orbit. Select a node. The camera will reposition—no pages, no menus.
+
+        <div class="modules" id="modules">
+          <div class="mod active" data-mod="CORE"><span>▸ CORE</span><span class="arm">ARM</span></div>
+          <div class="mod" data-mod="SYSTEMS"><span>▸ SYSTEMS</span><span class="arm">ARM</span></div>
+          <div class="mod" data-mod="SERVICES"><span>▸ SERVICES</span><span class="arm">ARM</span></div>
+          <div class="mod" data-mod="PHASE3"><span>▸ PHASE III</span><span class="arm">ARM</span></div>
+          <div class="mod" data-mod="SIGNAL"><span>▸ SIGNAL</span><span class="arm">ARM</span></div>
+          <div class="mod" data-mod="CONTACT"><span>▸ CONTACT</span><span class="arm">ARM</span></div>
         </div>
-        <div class="hoverNote">Hover reveals subtext. Some knowledge is gated.</div>
       </div>
 
-      <div class="toggles">
-        <span>OPTIONS</span>
-        <button class="toggleBtn" id="audioBtn" type="button">AUDIO: OFF</button>
-        <button class="toggleBtn" id="reduceBtn" type="button">MOTION: ON</button>
+      <!-- Viewport -->
+      <div class="frame viewport">
+        <div class="viewportHead">
+          <span>MAIN VIEWPORT</span>
+          <span class="mode" id="modeLabel">CORE</span>
+        </div>
+        <div class="viewportBody" id="viewportBody"></div>
+        <div class="flicker" id="flicker" aria-hidden="true"></div>
       </div>
     </div>
-  </div>
 
-  <!-- SECRET OVERLAY (Ξ) -->
-  <div class="overlay" id="xiOverlay">
-    <div class="overlayCard">
-      <div class="overlayTitle">
-        <span>Ξ // GLYPH CHANNEL</span>
-        <button class="overlayClose" id="xiClose" type="button">CLOSE</button>
-      </div>
-      <div class="overlayBody" id="xiBody">
-OPERATOR NOTE:
-Some systems respond to intent.
-
-- Hold the SATCORP core mark for 5 seconds.
-- Konami sequence reveals KYRAX transmission.
-- Local midnight triggers Red Alert.
-
-Proceed.
+    <!-- Bottom status bar -->
+    <div class="frame">
+      <div class="bottombar">
+        <div class="stat"><span class="dot" aria-hidden="true"></span> SYSTEM INTEGRITY: <span id="integrity">99.8%</span></div>
+        <div class="stat">SIGNAL PENETRATION: <span id="penetration">HIGH</span></div>
+        <div class="stat">ORBITAL MASS: <span id="mass">INCREASING</span></div>
+        <div class="stat">OPERATOR THREAT: <span id="threat">UNKNOWN</span></div>
+        <div class="stat">TIME: <span id="timeNow">--:--</span></div>
       </div>
     </div>
   </div>
 
-  <!-- KYRAX OVERLAY -->
-  <div class="overlay" id="kyraxOverlay">
-    <div class="overlayCard">
-      <div class="overlayTitle">
-        <span>KYRAX // INCOMING TRANSMISSION</span>
-        <button class="overlayClose" id="kyraxClose" type="button">CLOSE</button>
+  <!-- Hidden KYRAX console -->
+  <div class="overlay" id="consoleOverlay">
+    <div class="console">
+      <div class="consoleHead">
+        <span>KYRAX // SYSTEM CONSOLE</span>
+        <button class="closeBtn" id="closeConsole" type="button">CLOSE</button>
       </div>
-      <div class="overlayBody" id="kyraxBody">
-[SECURE SIGNAL]
-SATCORP IS NOT A SERVICE.
-IT IS AN ORBIT.
+      <div class="consoleBody" id="consoleBody">
+ACCESS GRANTED: LIMITED
 
-AUTHORIZATION REQUIRED.
+SATCORP EXISTS AS INFRASTRUCTURE.
+NOT BRAND.
+NOT AGENCY.
+NOT PLATFORM.
+
+“This system does not compete.”
       </div>
     </div>
   </div>
 
-  <script type="module">
-    // --- THREE.JS (CDN) ---
-    import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+  <script>
+    // --- Landing typewriter ---
+    const typeOut = document.getElementById("typeOut");
+    const lines = [
+      "KYRAX ONLINE",
+      "OPERATOR STATUS: UNVERIFIED",
+      "AWAITING INPUT"
+    ];
 
-    // ---------- UTIL ----------
-    const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
-    const lerp  = (a,b,t)=>a+(b-a)*t;
-    const easeInOut = (t)=> t<.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
-
-    // Reduce motion preference (plus our toggle)
-    let userReduce = false;
-    const prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    // Local time midnight red alert
-    function checkRedAlert(){
-      const d = new Date();
-      const isMidnight = d.getHours() === 0;
-      document.body.classList.toggle("red-alert", isMidnight);
-    }
-    checkRedAlert();
-    setInterval(checkRedAlert, 30_000);
-
-    // ---------- VISIT MEMORY ----------
-    const VISIT_KEY = "satcorp_visits_v1";
-    const visits = clamp(parseInt(localStorage.getItem(VISIT_KEY) || "0", 10) || 0, 0, 99);
-    localStorage.setItem(VISIT_KEY, String(visits + 1));
-
-    const sessionLabel = document.getElementById("sessionLabel");
-    const landingLine  = document.getElementById("landingLine");
-
-    if (visits === 0){
-      sessionLabel.textContent = "FIRST CONTACT";
-      landingLine.textContent = "Your website isn’t pages. It’s a system the visitor enters.";
-    } else if (visits === 1){
-      sessionLabel.textContent = "RETURN VECTOR";
-      landingLine.textContent = "You’ve returned. Less explanation. More authority.";
-    } else {
-      sessionLabel.textContent = "CLEARANCE PATH";
-      landingLine.textContent = "Proceed.";
-    }
-
-    // ---------- DOM ----------
-    const canvas   = document.getElementById("scene");
-    const landing  = document.getElementById("landing");
-    const hud      = document.getElementById("hud");
-    const enterBtn = document.getElementById("enterBtn");
-
-    const nodeTitle = document.getElementById("nodeTitle");
-    const nodeBody  = document.getElementById("nodeBody");
-    const gateLabel = document.getElementById("gateLabel");
-
-    const sysStatus = document.getElementById("sysStatus");
-    const massVal   = document.getElementById("massVal");
-    const signalVal = document.getElementById("signalVal");
-
-    const audioBtn  = document.getElementById("audioBtn");
-    const reduceBtn = document.getElementById("reduceBtn");
-
-    // Overlays
-    const xiOverlay = document.getElementById("xiOverlay");
-    const xiClose   = document.getElementById("xiClose");
-    const kyraxOverlay = document.getElementById("kyraxOverlay");
-    const kyraxClose   = document.getElementById("kyraxClose");
-
-    xiClose.addEventListener("click", ()=> xiOverlay.classList.remove("show"));
-    kyraxClose.addEventListener("click", ()=> kyraxOverlay.classList.remove("show"));
-
-    // ---------- AUDIO (OPTIONAL, TOGGLEABLE) ----------
-    let audioOn = false;
-    let audioCtx = null;
-    let humOsc = null;
-    let humGain = null;
-
-    function startHum(){
-      if (audioCtx) return;
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      humOsc = audioCtx.createOscillator();
-      humGain = audioCtx.createGain();
-      humOsc.type = "sine";
-      humOsc.frequency.value = 46; // low hum
-      humGain.gain.value = 0.0;
-      humOsc.connect(humGain).connect(audioCtx.destination);
-      humOsc.start();
-
-      // fade in
-      const now = audioCtx.currentTime;
-      humGain.gain.cancelScheduledValues(now);
-      humGain.gain.setValueAtTime(0.0, now);
-      humGain.gain.linearRampToValueAtTime(0.05, now + 1.2);
-    }
-
-    function stopHum(){
-      if (!audioCtx) return;
-      const now = audioCtx.currentTime;
-      humGain.gain.cancelScheduledValues(now);
-      humGain.gain.setValueAtTime(humGain.gain.value, now);
-      humGain.gain.linearRampToValueAtTime(0.0, now + 0.5);
-      setTimeout(()=>{
-        try{ humOsc.stop(); } catch {}
-        try{ audioCtx.close(); } catch {}
-        audioCtx = null; humOsc = null; humGain = null;
-      }, 650);
-    }
-
-    audioBtn.addEventListener("click", async ()=>{
-      audioOn = !audioOn;
-      audioBtn.textContent = `AUDIO: ${audioOn ? "ON" : "OFF"}`;
-      if (audioOn){
-        try{
-          startHum();
-          if (audioCtx && audioCtx.state === "suspended") await audioCtx.resume();
-        } catch {
-          audioOn = false;
-          audioBtn.textContent = "AUDIO: OFF";
-        }
-      } else {
-        stopHum();
-      }
-    });
-
-    // Motion toggle
-    userReduce = prefersReduced;
-    function syncMotionBtn(){
-      reduceBtn.textContent = `MOTION: ${userReduce ? "REDUCED" : "ON"}`;
-    }
-    syncMotionBtn();
-    reduceBtn.addEventListener("click", ()=>{
-      userReduce = !userReduce;
-      syncMotionBtn();
-    });
-
-    // ---------- THREE SCENE SETUP ----------
-    let renderer, scene, camera;
-    let seal, sealWire, glyphGroup, starPoints, nodeGroup, core;
-    let started = false;
-
-    const state = {
-      phase: "landing", // landing -> fracture -> hud
-      t: 0,
-      target: new THREE.Vector3(0,0,0),
-      camFrom: new THREE.Vector3(0,0,7),
-      camTo:   new THREE.Vector3(0,0,4),
-      camT: 0,
-      orbitAngle: 0,
-      focusNode: "CORE",
-      visited: new Set(["CORE"]),
-      gate: {
-        SIGNAL: false,
-        SERVICES: false,
-        PHASE3: false,
-        CONTACT: false
-      }
-    };
-
-    // Fallback if WebGL unavailable
-    function initRenderer(){
-      try{
-        renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true, powerPreference:"high-performance" });
-      } catch {
-        document.getElementById("fallback").classList.add("show");
-        return false;
-      }
-      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      return true;
-    }
-
-    function init(){
-      if (!initRenderer()) return;
-
-      scene = new THREE.Scene();
-
-      camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 100);
-      camera.position.copy(state.camFrom);
-      camera.lookAt(0,0,0);
-
-      // Lights (subtle)
-      const amb = new THREE.AmbientLight(0xffffff, 0.45);
-      scene.add(amb);
-
-      const key = new THREE.PointLight(0x9b5de5, 1.1, 50);
-      key.position.set(3, 2, 6);
-      scene.add(key);
-
-      const rim = new THREE.PointLight(0x2ee9ff, 0.7, 50);
-      rim.position.set(-4, -2, 7);
-      scene.add(rim);
-
-      // Starfield
-      const stars = new Float32Array(2400 * 3);
-      for (let i=0;i<2400;i++){
-        const r = 18 + Math.random()*35;
-        const theta = Math.random()*Math.PI*2;
-        const phi = Math.acos(2*Math.random()-1);
-        stars[i*3+0] = r * Math.sin(phi) * Math.cos(theta);
-        stars[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-        stars[i*3+2] = r * Math.cos(phi);
-      }
-      const starGeom = new THREE.BufferGeometry();
-      starGeom.setAttribute("position", new THREE.BufferAttribute(stars, 3));
-      const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.03, transparent:true, opacity:0.65 });
-      starPoints = new THREE.Points(starGeom, starMat);
-      scene.add(starPoints);
-
-      // Seal (a “satcorp seal” proxy: torus + inner poly)
-      const sealGroup = new THREE.Group();
-
-      const torus = new THREE.TorusGeometry(1.15, 0.09, 22, 120);
-      const torusMat = new THREE.MeshStandardMaterial({
-        color: 0x9b5de5,
-        emissive: 0x2b103e,
-        metalness: 0.25,
-        roughness: 0.45
-      });
-      seal = new THREE.Mesh(torus, torusMat);
-      sealGroup.add(seal);
-
-      const inner = new THREE.IcosahedronGeometry(0.62, 0);
-      const innerMat = new THREE.MeshStandardMaterial({
-        color: 0x0b0c11,
-        emissive: 0x120816,
-        metalness: 0.15,
-        roughness: 0.35
-      });
-      const innerMesh = new THREE.Mesh(inner, innerMat);
-      sealGroup.add(innerMesh);
-
-      const wire = new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(0.62, 0));
-      const wireMat = new THREE.LineBasicMaterial({ color: 0x2ee9ff, transparent:true, opacity:0.35 });
-      sealWire = new THREE.LineSegments(wire, wireMat);
-      sealWire.scale.setScalar(1.02);
-      sealGroup.add(sealWire);
-
-      sealGroup.position.set(0,0,0);
-      scene.add(sealGroup);
-
-      // Glyph fracture group (starts hidden)
-      glyphGroup = new THREE.Group();
-      glyphGroup.visible = false;
-      scene.add(glyphGroup);
-
-      // Core + Nodes (HUD phase)
-      nodeGroup = new THREE.Group();
-      nodeGroup.visible = false;
-      scene.add(nodeGroup);
-
-      core = makeNode("🜂", "CORE", 0x9b5de5);
-      core.position.set(0,0,0);
-      nodeGroup.add(core);
-
-      const nodes = [
-        { icon:"🛰", key:"SYSTEMS", label:"SYSTEMS", angle: 0.2,  color:0x9b5de5 },
-        { icon:"📡", key:"SIGNAL",  label:"SIGNAL",  angle: 1.1,  color:0x2ee9ff },
-        { icon:"⚙️", key:"SERVICES",label:"SERVICES",angle: 2.1,  color:0x9b5de5 },
-        { icon:"🜁", key:"PHASE3",  label:"PHASE III",angle: 3.2, color:0x2ee9ff },
-        { icon:"🜃", key:"CONTACT", label:"CONTACT", angle: 4.25, color:0x9b5de5 },
-      ];
-      const R = 2.45;
-      for (const n of nodes){
-        const m = makeNode(n.icon, n.key, n.color);
-        m.userData.label = n.label;
-        m.userData.angle = n.angle;
-        m.position.set(Math.cos(n.angle)*R, Math.sin(n.angle)*R, 0);
-        nodeGroup.add(m);
-      }
-
-      // Raycaster for clicking nodes
-      const ray = new THREE.Raycaster();
-      const mouse = new THREE.Vector2();
-
-      function onPointerMove(e){
-        const rect = canvas.getBoundingClientRect();
-        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-        mouse.y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
-      }
-      window.addEventListener("pointermove", onPointerMove);
-
-      function onClick(e){
-        if (!started) return;
-        if (state.phase !== "hud") return;
-
-        const rect = canvas.getBoundingClientRect();
-        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-        mouse.y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
-
-        ray.setFromCamera(mouse, camera);
-        const hits = ray.intersectObjects(nodeGroup.children, true);
-        if (hits.length){
-          const obj = hits[0].object;
-          const root = obj.userData.root || obj.parent?.userData?.root || obj;
-          const key = root.userData.key;
-          if (key) focus(key);
+    function typeLines(){
+      typeOut.innerHTML = '<span class="violet">&gt; </span>';
+      let i=0, j=0;
+      function tick(){
+        if (i >= lines.length) return;
+        const line = lines[i];
+        if (j < line.length){
+          typeOut.innerHTML += line[j];
+          j++;
+          setTimeout(tick, 22);
+        } else {
+          typeOut.innerHTML += "\n" + '<span class="violet">&gt; </span>';
+          i++; j=0;
+          setTimeout(tick, 160);
         }
       }
-      window.addEventListener("click", onClick, { passive:true });
-
-      // Hover glow
-      function hover(){
-        if (!started || state.phase !== "hud") return;
-        ray.setFromCamera(mouse, camera);
-        const hits = ray.intersectObjects(nodeGroup.children, true);
-        nodeGroup.traverse(o=>{
-          if (o.userData && o.userData.kind === "node"){
-            o.userData.setHot(false);
-          }
-        });
-        if (hits.length){
-          const root = hits[0].object.userData.root || hits[0].object.parent?.userData?.root || hits[0].object;
-          if (root.userData && root.userData.kind === "node"){
-            root.userData.setHot(true);
-          }
-        }
-      }
-
-      // Animate loop
-      let last = performance.now();
-      function tick(now){
-        const dt = Math.min(0.05, (now - last)/1000);
-        last = now;
-
-        // drift stars
-        if (!userReduce){
-          starPoints.rotation.y += dt * 0.02;
-          starPoints.rotation.x += dt * 0.006;
-        }
-
-        // landing seal rotation
-        if (state.phase === "landing"){
-          const sp = userReduce ? 0.18 : 0.45;
-          seal.rotation.z += dt * sp;
-          seal.rotation.x += dt * sp * 0.22;
-          sealWire.rotation.z -= dt * sp * 0.65;
-          sealWire.rotation.y += dt * sp * 0.20;
-        }
-
-        // fracture animation
-        if (state.phase === "fracture"){
-          state.t += dt;
-          const T = clamp(state.t / (userReduce ? 1.0 : 1.35), 0, 1);
-          // camera zoom through
-          const e = easeInOut(T);
-          camera.position.lerpVectors(state.camFrom, state.camTo, e);
-          camera.lookAt(0,0,0);
-
-          // glyphs expand out
-          glyphGroup.children.forEach((g,i)=>{
-            const k = g.userData.k;
-            g.position.x = g.userData.base.x * (0.2 + 1.8*e) + Math.sin((i+1)*3.1 + now*0.002)*0.02;
-            g.position.y = g.userData.base.y * (0.2 + 1.8*e) + Math.cos((i+2)*2.7 + now*0.002)*0.02;
-            g.position.z = g.userData.base.z * (0.2 + 1.8*e);
-            g.rotation.z += dt * (0.6 + i*0.02);
-            g.material.opacity = lerp(0.0, 0.9, e);
-          });
-
-          // hide seal as fracture grows
-          seal.material.opacity = lerp(1, 0, e);
-          seal.material.transparent = true;
-          torusMatNeedsUpdate();
-
-          if (T >= 1){
-            state.phase = "hud";
-            glyphGroup.visible = false;
-            nodeGroup.visible = true;
-            hud.classList.add("on");
-            camera.position.set(0, 0, 6.5);
-            camera.lookAt(0,0,0);
-            focus("CORE", true);
-          }
-        }
-
-        // hud orbit + camera positioning
-        if (state.phase === "hud"){
-          hover();
-
-          const sp = userReduce ? 0.12 : 0.25;
-          state.orbitAngle += dt * sp;
-
-          // rotate nodes around core
-          const R = 2.45;
-          nodeGroup.children.forEach(obj=>{
-            if (obj.userData && obj.userData.kind === "node" && obj.userData.key !== "CORE"){
-              const base = obj.userData.angle;
-              const a = base + state.orbitAngle;
-              obj.position.x = Math.cos(a) * R;
-              obj.position.y = Math.sin(a) * R;
-              obj.position.z = 0;
-            }
-          });
-
-          // subtle core breathing
-          const b = 1 + (userReduce ? 0.0 : Math.sin(now*0.0015)*0.02);
-          core.scale.setScalar(b);
-
-          // camera tween toward focused node
-          if (state.camT < 1){
-            state.camT = clamp(state.camT + dt / (userReduce ? 0.35 : 0.65), 0, 1);
-            const e = easeInOut(state.camT);
-            camera.position.lerpVectors(state.camFrom, state.camTo, e);
-            camera.lookAt(state.target);
-          }
-        }
-
-        // animated status words
-        animateStatus(now);
-
-        renderer.render(scene, camera);
-        requestAnimationFrame(tick);
-      }
-      requestAnimationFrame(tick);
-
-      window.addEventListener("resize", ()=>{
-        if (!renderer) return;
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        camera.aspect = window.innerWidth/window.innerHeight;
-        camera.updateProjectionMatrix();
-      });
-
-      function torusMatNeedsUpdate(){ /* keep function to avoid accidental optimization removal */ }
+      tick();
     }
+    typeLines();
 
-    function makeNode(icon, key, colorHex){
-      const g = new THREE.Group();
-      g.userData.kind = "node";
-      g.userData.key = key;
-
-      // ring
-      const ring = new THREE.RingGeometry(0.26, 0.34, 48);
-      const ringMat = new THREE.MeshBasicMaterial({ color: colorHex, transparent:true, opacity:0.55, side:THREE.DoubleSide });
-      const ringMesh = new THREE.Mesh(ring, ringMat);
-      g.add(ringMesh);
-
-      // core disc
-      const disc = new THREE.CircleGeometry(0.18, 40);
-      const discMat = new THREE.MeshBasicMaterial({ color: 0x0b0c11, transparent:true, opacity:0.85 });
-      const discMesh = new THREE.Mesh(disc, discMat);
-      g.add(discMesh);
-
-      // glow sprite-ish plane
-      const glow = new THREE.PlaneGeometry(1.1, 1.1);
-      const glowMat = new THREE.MeshBasicMaterial({ color: colorHex, transparent:true, opacity:0.08, depthWrite:false });
-      const glowMesh = new THREE.Mesh(glow, glowMat);
-      glowMesh.position.z = -0.02;
-      g.add(glowMesh);
-
-      // icon via canvas texture (so we can show emoji without DOM)
-      const tex = makeTextTexture(icon, 96, "bold 64px system-ui", "rgba(238,240,246,.92)");
-      const sprMat = new THREE.SpriteMaterial({ map: tex, transparent:true, opacity:0.95 });
-      const spr = new THREE.Sprite(sprMat);
-      spr.scale.set(0.65,0.65,1);
-      spr.userData.root = g;
-      g.add(spr);
-
-      // hover hotness
-      g.userData.setHot = (hot)=>{
-        ringMat.opacity = hot ? 0.95 : 0.55;
-        glowMat.opacity = hot ? 0.18 : 0.08;
-        sprMat.opacity  = hot ? 1.0 : 0.92;
-      };
-
-      return g;
+    // Night shift tint
+    function checkNight(){
+      const h = new Date().getHours();
+      document.body.classList.toggle("night", (h >= 20 || h <= 5));
     }
+    checkNight();
+    setInterval(checkNight, 60000);
 
-    function makeTextTexture(text, size, font, fill){
-      const c = document.createElement("canvas");
-      c.width = c.height = size;
-      const ctx = c.getContext("2d");
-      ctx.clearRect(0,0,size,size);
-      ctx.font = font;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = fill;
-      ctx.fillText(text, size/2, size/2 + 2);
-      const tex = new THREE.CanvasTexture(c);
-      tex.needsUpdate = true;
-      return tex;
-    }
-
-    // ---------- FRACTURE EFFECT ----------
-    function buildGlyphs(){
-      glyphGroup.clear();
-      glyphGroup.visible = true;
-
-      // simple “glyph shards” using thin boxes + emissive-like material
-      const shardMat = new THREE.MeshBasicMaterial({ color: 0x9b5de5, transparent:true, opacity:0.0 });
-      const cyanMat  = new THREE.MeshBasicMaterial({ color: 0x2ee9ff, transparent:true, opacity:0.0 });
-
-      const count = userReduce ? 22 : 46;
-      for (let i=0;i<count;i++){
-        const w = 0.06 + Math.random()*0.22;
-        const h = 0.02 + Math.random()*0.08;
-        const geo = new THREE.BoxGeometry(w, h, 0.02);
-        const mat = (i%3===0) ? cyanMat.clone() : shardMat.clone();
-        const m = new THREE.Mesh(geo, mat);
-
-        const base = new THREE.Vector3(
-          (Math.random()*2-1) * 0.8,
-          (Math.random()*2-1) * 0.6,
-          (Math.random()*2-1) * 0.4
-        );
-        m.userData.base = base;
-        m.userData.k = i;
-
-        m.position.set(0,0,0);
-        m.rotation.z = Math.random()*Math.PI*2;
-        glyphGroup.add(m);
-      }
-    }
-
-    // ---------- CAMERA / NODE CONTENT ----------
-    const content = {
-      CORE: {
-        title: "🜂 SATCORP CORE",
-        open: true,
-        body: () => {
-          if (visits <= 0) return "Welcome, Operator. Select an orbital node. The system will reposition—no pages, no menus.";
-          if (visits === 1) return "You’ve returned. The orbit remembers. Choose a node.";
-          return "Proceed.";
-        }
-      },
-      SYSTEMS: {
-        title: "🛰 SYSTEMS",
-        open: true,
-        body: () => "Architected stacks. Modular deployments. Interfaces that hold under pressure."
-      },
-      SIGNAL: {
-        title: "📡 SIGNAL",
-        open: () => state.visited.has("SYSTEMS"), // gated
-        body: () => "Signal doctrine: precision messaging, controlled reveal, authority-first typography."
-      },
-      SERVICES: {
-        title: "⚙️ SERVICES",
-        open: () => state.visited.has("SYSTEMS") && state.visited.has("SIGNAL"),
-        body: () => renderServices()
-      },
-      PHASE3: {
-        title: "🜁 PHASE III",
-        open: () => state.visited.has("SERVICES"),
-        body: () => "Phase III is controlled. Some systems activate only after proof of intent."
-      },
-      CONTACT: {
-        title: "🜃 CONTACT",
-        open: () => state.visited.has("SERVICES"),
-        body: () => "Request access. Provide mission, constraints, and target outcome."
-      }
-    };
-
-    function renderServices(){
-      return `
-Services are sealed modules.
-
-• MODULE: Landing Systems  — [Initialize]
-• MODULE: Site Architecture — [Initialize]
-• MODULE: Performance + SEO  — [Initialize]
-
-Authorization required.
-CTA: REQUEST ACCESS
-      `.trim();
-    }
-
-    function setRail(key){
-      const c = content[key];
-      nodeTitle.textContent = c.title;
-
-      const open = (typeof c.open === "function") ? c.open() : c.open;
-      gateLabel.textContent = open ? "ACCESS: OPEN" : "ACCESS: LOCKED";
-
-      if (!open){
-        nodeBody.textContent = "Knowledge gated. View prerequisite nodes to unlock.";
-        return;
-      }
-
-      // authority-based copy behavior
-      const txt = (typeof c.body === "function") ? c.body() : c.body;
-      nodeBody.textContent = txt;
-    }
-
-    function focus(key, instant=false){
-      // record visits
-      state.visited.add(key);
-
-      // update gating “states”
-      state.gate.SIGNAL   = state.visited.has("SYSTEMS");
-      state.gate.SERVICES = state.visited.has("SYSTEMS") && state.visited.has("SIGNAL");
-      state.gate.PHASE3   = state.visited.has("SERVICES");
-      state.gate.CONTACT  = state.visited.has("SERVICES");
-
-      state.focusNode = key;
-      setRail(key);
-
-      // camera reposition (no page load)
-      const target = new THREE.Vector3(0,0,0);
-      if (key !== "CORE"){
-        const node = nodeGroup.children.find(n => n.userData && n.userData.key === key);
-        if (node) target.copy(node.position);
-      }
-      state.target.copy(target);
-
-      const camOffset = new THREE.Vector3(0, 0, 6.2);
-      const toward = target.clone().add(camOffset);
-
-      state.camFrom.copy(camera.position);
-      state.camTo.copy(toward);
-      state.camT = instant ? 1 : 0;
-
-      // status reacts slowly
-      sysStatus.textContent = "STABLE";
-      if (key === "SERVICES") sysStatus.textContent = "INITIALIZING";
-      if (key === "PHASE3")   sysStatus.textContent = "CONTROLLED";
-      if (key === "CONTACT")  sysStatus.textContent = "READY";
-    }
-
-    // ---------- STATUS ANIMATION ----------
-    function animateStatus(now){
-      // Slow-cycling words; tiny, not flashy
-      const t = now * 0.00012;
-      const a = Math.sin(t*2.1);
-      const b = Math.sin(t*1.6 + 1.3);
-
-      massVal.textContent   = (a > 0.35) ? "GAINING" : (a < -0.35) ? "HOLDING" : "STABLE";
-      signalVal.textContent = (b > 0.35) ? "EXPANDING" : (b < -0.35) ? "FOCUSED" : "LOCKED";
-    }
-
-    // ---------- ENTER ORBIT SEQUENCE ----------
-    enterBtn.addEventListener("click", async ()=>{
-      if (started) return;
-
-      // Try to start audio only if user toggled it earlier OR if they want it now.
-      // (We keep default OFF; they can turn it on in HUD.)
+    // --- Initialize HUD ---
+    const landing = document.getElementById("landing");
+    const hud = document.getElementById("hud");
+    const initBtn = document.getElementById("initBtn");
+    initBtn.addEventListener("click", ()=>{
       landing.classList.add("hidden");
-      started = true;
-
-      // Build scene on demand (so landing loads instantly)
-      init();
-
-      // fracture
-      buildGlyphs();
-      state.phase = "fracture";
-      state.t = 0;
-
-      // also “snap” HUD a moment later
-      setTimeout(()=> {
-        hud.classList.add("on");
-      }, userReduce ? 500 : 900);
+      hud.classList.add("on");
+      KYRAX.say("Interface initialized. Operator inside system.");
     });
 
-    // ---------- OBSERVER MODE (hold logo 5s) ----------
-    const brandHUD = document.getElementById("brandHUD");
-    let holdTimer = null;
-    let held = false;
+    // --- KYRAX message layer ---
+    const kyrMsg = document.getElementById("kyrMsg");
+    const kyrText = document.getElementById("kyrText");
+    const KYRAX = {
+      enabled: true,
+      say(msg){
+        if (!this.enabled) return;
+        kyrText.textContent = msg;
+        kyrMsg.classList.add("on");
+        setTimeout(()=> kyrMsg.classList.remove("on"), 1900);
+      }
+    };
 
-    function showToast(text){
-      // quick inline overlay using the Ξ overlay for simplicity
-      document.getElementById("xiBody").textContent = text;
-      xiOverlay.classList.add("show");
-      setTimeout(()=> xiOverlay.classList.remove("show"), 2400);
+    // Rare KYRAX messages
+    const rare = [
+      "Irrelevant data omitted.",
+      "You are observing an effect, not a cause.",
+      "This system does not compete.",
+      "Structure precedes growth.",
+      "Authorization is a discipline."
+    ];
+    function maybeRare(){
+      // ~18% chance
+      if (Math.random() < 0.18) KYRAX.say(rare[Math.floor(Math.random()*rare.length)]);
     }
 
-    brandHUD.addEventListener("pointerdown", ()=>{
-      if (state.phase !== "hud") return;
-      held = false;
-      holdTimer = setTimeout(()=>{
-        held = true;
-        showToast("OBSERVER MODE ENABLED");
-        // small effect: make status more “authoritative”
-        sysStatus.textContent = "OVERRIDDEN";
-      }, 5000);
-    });
-    window.addEventListener("pointerup", ()=>{
-      if (holdTimer) clearTimeout(holdTimer);
-      holdTimer = null;
-    });
+    // --- Module switching ---
+    const modules = document.getElementById("modules");
+    const modeLabel = document.getElementById("modeLabel");
+    const viewportBody = document.getElementById("viewportBody");
+    const flicker = document.getElementById("flicker");
 
-    // ---------- KEYBOARD EASTER EGGS ----------
-    // Type “Ξ” to show overlay
-    window.addEventListener("keydown", (e)=>{
-      if (e.key === "Ξ"){
-        xiOverlay.classList.add("show");
+    function doFlicker(){
+      flicker.classList.remove("on");
+      // reflow
+      void flicker.offsetWidth;
+      flicker.classList.add("on");
+    }
+
+    const views = {
+      CORE(){
+        return `
+          <div class="sealWrap">
+            <div class="seal" aria-hidden="true"></div>
+            <div class="readouts">
+              <div class="ro"><div class="k">SYSTEM</div><div class="v">HYPΞRION HUD</div></div>
+              <div class="ro"><div class="k">KYRAX</div><div class="v">ACTIVE</div></div>
+              <div class="ro"><div class="k">OPERATOR</div><div class="v">UNVERIFIED</div></div>
+            </div>
+          </div>
+
+          <div class="decl">
+            SATCORP EXISTS AS INFRASTRUCTURE<br/>
+            NOT BRAND<br/>
+            NOT AGENCY<br/>
+            NOT PLATFORM
+          </div>
+
+          <div class="whisper"><span class="violet">&gt;</span> Structure precedes growth.</div>
+        `;
+      },
+      SYSTEMS(){
+        return `
+          <div class="blocks">
+            <div class="block" data-open="0">
+              <div class="t">KYRAX</div>
+              <div class="s">Cognitive Orchestrator • STATUS: STABLE</div>
+              <div class="drawer">Diagnostic: Signal filtering engaged. Noise suppressed. Authority maintained.</div>
+            </div>
+
+            <div class="block" data-open="0">
+              <div class="t">HYPΞRION</div>
+              <div class="s">Interface Kernel • STATUS: NOMINAL</div>
+              <div class="drawer">Diagnostic: Frame integrity holding. Mode transitions within tolerance.</div>
+            </div>
+
+            <div class="block" data-open="0">
+              <div class="t">SENTINEL</div>
+              <div class="s">Access Control • STATUS: WATCHING</div>
+              <div class="drawer">Diagnostic: Operator classification pending. Gate rules active.</div>
+            </div>
+
+            <div class="block" data-open="0">
+              <div class="t">LATTICE</div>
+              <div class="s">Structure Engine • STATUS: BUILDING</div>
+              <div class="drawer">Diagnostic: Hierarchy reinforcement in progress. Layout grid stabilized.</div>
+            </div>
+          </div>
+
+          <div class="whisper"><span class="violet">&gt;</span> Systems are not features. They are constraints.</div>
+        `;
+      },
+      SERVICES(){
+        return `
+          <div class="deploy">
+            <div class="left">
+              <div class="name">[ DEPLOYMENT: SIGNAL ARCHITECTURE ]</div>
+              <div class="meta">STATUS: AVAILABLE • AUTHORIZATION: REQUIRED</div>
+            </div>
+            <button class="deployBtn" data-act="request">▶ REQUEST DEPLOYMENT</button>
+          </div>
+
+          <div class="deploy">
+            <div class="left">
+              <div class="name">[ DEPLOYMENT: LANDING SYSTEMS ]</div>
+              <div class="meta">STATUS: AVAILABLE • AUTHORIZATION: REQUIRED</div>
+            </div>
+            <button class="deployBtn" data-act="request">▶ REQUEST DEPLOYMENT</button>
+          </div>
+
+          <div class="deploy">
+            <div class="left">
+              <div class="name">[ DEPLOYMENT: PERFORMANCE + SEO ]</div>
+              <div class="meta">STATUS: AVAILABLE • AUTHORIZATION: REQUIRED</div>
+            </div>
+            <button class="deployBtn" data-act="request">▶ REQUEST DEPLOYMENT</button>
+          </div>
+
+          <div class="whisper"><span class="violet">&gt;</span> No pricing displayed. Sales language omitted.</div>
+        `;
+      },
+      PHASE3(){
+        return `
+          <div class="classified">
+            <div class="stripe">CLASSIFIED • PHASE III • CONTROLLED REVEAL</div>
+            <div class="phaseBody" id="phaseType"></div>
+          </div>
+          <div class="whisper"><span class="violet">&gt;</span> Economic gravity is not created. It accumulates.</div>
+        `;
+      },
+      SIGNAL(){
+        return `
+          <div class="decl" style="border-color: rgba(46,233,255,.22);">
+            SIGNAL DISCIPLINE:<br/>
+            • Authority-first headlines<br/>
+            • Subtext on demand<br/>
+            • Information gating<br/>
+            • Controlled reveal
+          </div>
+          <div class="whisper"><span class="violet">&gt;</span> “Welcome” becomes “Proceed.”</div>
+        `;
+      },
+      CONTACT(){
+        return `
+          <div class="decl">
+            REQUEST ACCESS<br/>
+            PROVIDE: MISSION • CONSTRAINTS • OUTCOME
+          </div>
+
+          <div class="deploy" style="margin-top:12px;">
+            <div class="left">
+              <div class="name">[ CHANNEL: DIRECT ]</div>
+              <div class="meta">EMAIL: contact@satcorp.com (REPLACE)</div>
+            </div>
+            <a class="deployBtn" href="mailto:contact@satcorp.com">▶ TRANSMIT</a>
+          </div>
+
+          <div class="whisper"><span class="violet">&gt;</span> Authorization required.</div>
+        `;
       }
+    };
+
+    function setActiveMod(name){
+      modeLabel.textContent = name.replace("PHASE3","PHASE III");
+      viewportBody.innerHTML = views[name]();
+
+      // flicker transition + KYRAX interrupt sometimes
+      doFlicker();
+      if (Math.random() < 0.22) maybeRare();
+
+      // attach behaviors
+      if (name === "SYSTEMS"){
+        viewportBody.querySelectorAll(".block").forEach(b=>{
+          b.addEventListener("click", ()=>{
+            b.classList.toggle("open");
+            KYRAX.say(b.classList.contains("open") ? "Diagnostic view opened." : "Diagnostic view sealed.");
+          });
+        });
+      }
+
+      if (name === "SERVICES"){
+        viewportBody.querySelectorAll(".deployBtn").forEach(btn=>{
+          btn.addEventListener("click", (e)=>{
+            if (btn.tagName.toLowerCase() === "a") return;
+            KYRAX.say("Authorization required. Request logged.");
+          });
+        });
+      }
+
+      if (name === "PHASE3"){
+        const el = document.getElementById("phaseType");
+        const text = [
+          "WARNING: CONTROLLED INFORMATION",
+          "",
+          "THIS PAGE IS NOT EXPLANATORY.",
+          "IT IS DECLARATIVE.",
+          "",
+          "KYRAX OBSERVES:",
+          "“Economic gravity is not created.”",
+          "“It accumulates.”",
+          "",
+          "OPERATOR CLEARANCE: UNVERIFIED"
+        ].join("\n");
+        el.textContent = "";
+        let i=0;
+        (function type(){
+          if (i < text.length){
+            el.textContent += text[i++];
+            setTimeout(type, 14);
+          }
+        })();
+      }
+    }
+
+    // initial view
+    setActiveMod("CORE");
+
+    modules.addEventListener("click", (e)=>{
+      const mod = e.target.closest(".mod");
+      if (!mod) return;
+
+      const name = mod.dataset.mod;
+      modules.querySelectorAll(".mod").forEach(m=>m.classList.remove("active"));
+      mod.classList.add("active");
+      setActiveMod(name);
     });
 
-    // Konami input to show KYRAX
-    const konami = ["ArrowUp","ArrowUp","ArrowDown","ArrowDown","ArrowLeft","ArrowRight","ArrowLeft","ArrowRight","b","a"];
-    let kpos = 0;
+    // --- Bottom status anim ---
+    const integrity = document.getElementById("integrity");
+    const penetration = document.getElementById("penetration");
+    const mass = document.getElementById("mass");
+    const threat = document.getElementById("threat");
+    const timeNow = document.getElementById("timeNow");
+
+    function updateTime(){
+      const d = new Date();
+      const hh = String(d.getHours()).padStart(2,"0");
+      const mm = String(d.getMinutes()).padStart(2,"0");
+      timeNow.textContent = `${hh}:${mm}`;
+    }
+    updateTime();
+    setInterval(updateTime, 5000);
+
+    function cycle(){
+      // believable, subtle changes
+      const t = Date.now() * 0.00012;
+      const wob = Math.sin(t) * 0.06;
+      const base = 99.8 + wob;
+      integrity.textContent = `${base.toFixed(1)}%`;
+
+      penetration.textContent = (Math.sin(t*1.3) > 0.35) ? "HIGH" : (Math.sin(t*1.3) < -0.35) ? "FOCUSED" : "STABLE";
+      mass.textContent = (Math.sin(t*1.6 + 1.2) > 0.35) ? "INCREASING" : (Math.sin(t*1.6 + 1.2) < -0.35) ? "HOLDING" : "STABLE";
+      threat.textContent = (Math.sin(t*1.1 + 2.0) > 0.55) ? "UNKNOWN" : "UNVERIFIED";
+      requestAnimationFrame(cycle);
+    }
+    requestAnimationFrame(cycle);
+
+    // --- Observer Mode (Shift+Click logo) ---
+    const logoBtn = document.getElementById("logoBtn");
+    let observer = false;
+    logoBtn.addEventListener("click", (e)=>{
+      if (!e.shiftKey) return;
+      observer = !observer;
+      KYRAX.say(observer ? "Observer Mode enabled." : "Observer Mode disabled.");
+      document.documentElement.style.setProperty("--violet", observer ? "var(--cyan)" : "#9b5de5");
+    });
+
+    // --- Hidden console: typing KYRAX ---
+    const consoleOverlay = document.getElementById("consoleOverlay");
+    const closeConsole = document.getElementById("closeConsole");
+    closeConsole.addEventListener("click", ()=> consoleOverlay.classList.remove("show"));
+
+    let buffer = "";
     window.addEventListener("keydown", (e)=>{
-      const key = e.key;
-      const expected = konami[kpos];
-      if (key.toLowerCase() === expected.toLowerCase()){
-        kpos++;
-        if (kpos === konami.length){
-          kpos = 0;
-          kyraxOverlay.classList.add("show");
+      const k = e.key;
+      if (k.length === 1){
+        buffer = (buffer + k).slice(-12);
+        if (buffer.toUpperCase().includes("KYRAX")){
+          consoleOverlay.classList.add("show");
+          KYRAX.say("Console opened.");
+          buffer = "";
         }
-      } else {
-        kpos = 0;
+      } else if (k === "Escape"){
+        consoleOverlay.classList.remove("show");
       }
     });
-
-    // ---------- CLICK NODE CONTENT: “Initialize” modules ----------
-    // Since the rail is plain text right now, we interpret clicks on SERVICES node as “initialize unfold”.
-    // This is v1: next iteration converts services to real interactive modules in HUD.
-    let servicesInitialized = false;
-    window.addEventListener("keydown", (e)=>{
-      if (state.phase !== "hud") return;
-      if (state.focusNode === "SERVICES" && e.key.toLowerCase() === "i"){
-        servicesInitialized = !servicesInitialized;
-        nodeBody.textContent = servicesInitialized
-          ? "MODULES UNSEALED.\n\n• Landing Systems: ACTIVE\n• Site Architecture: ACTIVE\n• Performance + SEO: ACTIVE\n\nAuthorization required.\nCTA: REQUEST ACCESS"
-          : renderServices();
-      }
-    });
-
-    // ---------- STARTUP ----------
-    // (We intentionally do NOT init Three.js until Enter Orbit is clicked.)
   </script>
 </body>
 </html>

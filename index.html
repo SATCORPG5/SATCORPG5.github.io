@@ -3,1198 +3,848 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SATCORP // HYPΞRION HUD</title>
-  <meta name="description" content="SATCORP COMMAND INTERFACE — KYRAX ACTIVE" />
-  <meta name="theme-color" content="#07070a" />
+  <title>SATCORP :: HYPΞRION HUD</title>
+  <meta name="description" content="SATCORP :: HYPΞRION HUD — KYRAX ACTIVE" />
+  <meta name="theme-color" content="#050509" />
   <style>
     :root{
-      --obsidian:#07070a;
-      --panel:#0b0c11;
-      --panel2:#090a0f;
-      --text:#eef0f6;
-      --muted:#a9afc2;
-      --line: rgba(255,255,255,.12);
-      --line2: rgba(255,255,255,.07);
-      --violet:#9b5de5;     /* Plasma Violet */
-      --cyan:#2ee9ff;       /* Signal Cyan */
-      --warn:#f7c948;       /* warning stripe */
-      --danger:#ff2b57;
-      --radius: 14px;
+      /* Hyperion-accurate material system */
+      --bg:#050509;         /* near-black */
+      --panel:#0c0c18;      /* matte panel */
+      --line:#1f1f3a;       /* thin line */
+      --text:#e9e9f2;       /* soft off-white */
+      --muted:#a7a7bf;      /* muted */
+      --violet:#6f6aa6;     /* desaturated violet */
+      --cyan:#5f9aa6;       /* muted cyan */
+      --amber:#f2c14e;      /* rare alert */
+      --danger:#d96b7d;
+
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
       --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      --shadow: 0 18px 70px rgba(0,0,0,.55);
-      --glowV: 0 0 26px rgba(155,93,229,.25);
-      --glowC: 0 0 24px rgba(46,233,255,.18);
+
+      --r: 0px;             /* square */
+      --pad: 12px;
+      --gap: 8px;
+
+      --t: 120ms;           /* transitions <150ms */
     }
 
     *{ box-sizing:border-box; }
     html,body{ height:100%; }
     body{
       margin:0;
-      background: var(--obsidian);
+      background: var(--bg);
       color: var(--text);
       font-family: var(--sans);
       overflow:hidden;
     }
 
-    /* Background layers */
-    .bg{
-      position:fixed; inset:0;
-      background:
-        radial-gradient(1100px 760px at 18% 20%, rgba(155,93,229,.10), transparent 62%),
-        radial-gradient(1100px 760px at 82% 35%, rgba(46,233,255,.06), transparent 62%),
-        linear-gradient(180deg, #06060a, #040408);
-      z-index:0;
-    }
-
-    /* Animated scanlines + faint noise */
-    .scanlines{
+    /* Subtle scanlines (no glow, no gradients) */
+    .scan{
       position:fixed; inset:0;
       pointer-events:none;
-      z-index:1;
       background:
         repeating-linear-gradient(to bottom,
-          rgba(255,255,255,.045) 0px,
-          rgba(255,255,255,.045) 1px,
+          rgba(255,255,255,.03) 0px,
+          rgba(255,255,255,.03) 1px,
           transparent 2px,
-          transparent 8px);
-      opacity:.07;
+          transparent 10px);
+      opacity:.08;
       mix-blend-mode:overlay;
-      animation: scan 7.5s linear infinite;
-    }
-    @keyframes scan{
-      0%{ transform: translateY(0); }
-      100%{ transform: translateY(10px); }
+      z-index:1;
     }
 
-    /* Grid distortion (subtle) */
-    .grid{
+    /* Faint distortion grid */
+    .dist{
       position:fixed; inset:0;
       pointer-events:none;
-      z-index:2;
-      opacity:.10;
       background:
-        repeating-linear-gradient(to right, rgba(155,93,229,.10) 0px, rgba(155,93,229,.10) 1px, transparent 1px, transparent 40px),
-        repeating-linear-gradient(to bottom, rgba(46,233,255,.07) 0px, rgba(46,233,255,.07) 1px, transparent 1px, transparent 40px);
-      filter: blur(.2px);
-      animation: gridDrift 12s linear infinite;
-    }
-    @keyframes gridDrift{
-      0%{ transform: translate3d(0,0,0); }
-      100%{ transform: translate3d(-40px, 20px, 0); }
+        repeating-linear-gradient(to right, rgba(255,255,255,.03) 0px, rgba(255,255,255,.03) 1px, transparent 1px, transparent 48px),
+        repeating-linear-gradient(to bottom, rgba(255,255,255,.025) 0px, rgba(255,255,255,.025) 1px, transparent 1px, transparent 48px);
+      opacity:.06;
+      z-index:2;
     }
 
-    /* HUD noise speckle */
-    .noise{
-      position:fixed; inset:0;
-      pointer-events:none;
-      z-index:3;
-      background-image:
-        radial-gradient(circle at 20% 30%, rgba(255,255,255,.05) 0 1px, transparent 1px),
-        radial-gradient(circle at 70% 55%, rgba(255,255,255,.045) 0 1px, transparent 1px),
-        radial-gradient(circle at 40% 80%, rgba(255,255,255,.04) 0 1px, transparent 1px);
-      background-size: 220px 220px;
-      opacity:.16;
-      mix-blend-mode:overlay;
-      animation: noiseShift 9s linear infinite;
-    }
-    @keyframes noiseShift{
-      0%{ transform: translate3d(0,0,0); }
-      100%{ transform: translate3d(-60px, 40px, 0); }
-    }
-
-    /* Landing overlay */
-    .landing{
-      position:fixed; inset:0;
-      z-index:50;
-      display:grid;
-      place-items:center;
-      background: radial-gradient(900px 600px at 50% 45%, rgba(155,93,229,.10), rgba(0,0,0,.88));
-      transition: opacity 700ms linear;
-    }
-    .landing.hidden{ opacity:0; pointer-events:none; }
-
-    .landingCard{
-      width:min(920px, 92vw);
-      border: 1px solid rgba(255,255,255,.12);
-      background: linear-gradient(180deg, rgba(10,12,18,.62), rgba(7,9,14,.62));
-      box-shadow: var(--shadow);
-      border-radius: var(--radius);
-      overflow:hidden;
-    }
-    .landingHead{
-      padding: 16px 18px;
-      border-bottom: 1px solid rgba(255,255,255,.10);
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      align-items:baseline;
-      font-family: var(--mono);
-      letter-spacing:.18em;
-      text-transform:uppercase;
-      font-size: 11px;
-      color: rgba(169,175,194,.95);
-    }
-    .landingBody{
-      padding: 18px;
-      display:grid;
-      grid-template-columns: 1.1fr .9fr;
-      gap: 16px;
-      align-items:end;
-    }
-    .h1{
-      margin: 0;
-      font-size: clamp(28px, 4.4vw, 40px);
-      font-weight: 900;
-      letter-spacing:.14em;
-      text-transform:uppercase;
-    }
-    .h2{
-      margin: 10px 0 0;
-      color: rgba(169,175,194,.95);
-      font-family: var(--mono);
-      letter-spacing:.10em;
-      text-transform:uppercase;
-      font-size: 12px;
-      line-height: 1.6;
-    }
-
-    .typebox{
-      border: 1px solid rgba(155,93,229,.25);
-      background: rgba(0,0,0,.18);
-      border-radius: 12px;
-      padding: 12px;
-      font-family: var(--mono);
-      color: rgba(238,240,246,.94);
-      box-shadow: var(--glowV);
-      min-height: 122px;
-    }
-    .typebox .label{
-      color: rgba(169,175,194,.9);
-      letter-spacing:.16em;
-      text-transform:uppercase;
-      font-size: 10px;
-      margin-bottom: 8px;
-    }
-    .typebox pre{
-      margin:0;
-      white-space:pre-wrap;
-      line-height:1.55;
-      font-size: 12px;
-    }
-    .violet{ color: rgba(155,93,229,.95); text-shadow: var(--glowV); }
-
-    .initRow{
-      display:flex;
-      flex-direction:column;
-      align-items:flex-end;
-      gap:10px;
-      padding-top: 6px;
-    }
-    .btn{
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
-      padding: 12px 16px;
-      border-radius: 999px;
-      border: 1px solid rgba(46,233,255,.22);
-      background: rgba(0,0,0,.16);
-      color: rgba(238,240,246,.95);
-      font-family: var(--mono);
-      letter-spacing:.14em;
-      text-transform:uppercase;
-      font-weight: 900;
-      font-size: 12px;
-      cursor:pointer;
-      transition: opacity .15s linear, transform .15s linear, border-color .15s linear;
-      user-select:none;
-      box-shadow: var(--glowC);
-      animation: pulse 1.45s linear infinite;
-    }
-    @keyframes pulse{
-      0%,100%{ transform: translateY(0); opacity:.92; }
-      50%{ transform: translateY(-1px); opacity:1; }
-    }
-    .btn:hover{ border-color: rgba(46,233,255,.55); }
-    .hint{
-      font-family: var(--mono);
-      color: rgba(169,175,194,.9);
-      font-size: 11px;
-      letter-spacing:.10em;
-      text-transform:uppercase;
-    }
-
-    /* HUD container */
+    /* Frame layout */
     .hud{
-      position:fixed; inset:0;
-      z-index:10;
-      padding: 14px;
+      position:relative;
+      z-index:3;
+      height:100%;
+      padding: var(--gap);
       display:grid;
       grid-template-rows: auto 1fr auto;
-      gap: 10px;
-      opacity:0;
-      transform: translateY(3px);
-      transition: opacity 420ms linear, transform 420ms linear;
-      pointer-events:none;
-    }
-    .hud.on{
-      opacity:1;
-      transform: translateY(0);
-      pointer-events:auto;
+      gap: var(--gap);
     }
 
-    /* Framing panels */
     .frame{
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius: var(--radius);
-      background: linear-gradient(180deg, rgba(10,12,18,.50), rgba(7,9,14,.50));
-      box-shadow: 0 14px 55px rgba(0,0,0,.35);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
       overflow:hidden;
     }
 
     /* TOP BAR */
-    .topbar{
+    .top{
       display:flex;
+      align-items:center;
       justify-content:space-between;
-      gap:10px;
-      align-items:center;
-      padding: 12px 14px;
+      gap: 10px;
+      padding: 10px var(--pad);
       font-family: var(--mono);
-      letter-spacing:.14em;
+      letter-spacing:.08em;
+      font-size: 12px;
       text-transform:uppercase;
-      font-weight: 900;
-      font-size: 11px;
+      color: var(--muted);
     }
-    .topbar .left{
-      display:flex; gap:10px; align-items:center;
-      cursor:pointer;
-      user-select:none;
+    .top strong{
+      color: var(--text);
+      font-weight: 800;
+      letter-spacing:.06em;
     }
-    .logoMark{
-      width:10px; height:10px; border-radius:999px;
-      background: var(--violet);
-      box-shadow: 0 0 0 4px rgba(155,93,229,.12), 0 0 22px rgba(155,93,229,.22);
+    .kyrActive{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      color: var(--muted);
+      white-space:nowrap;
     }
-    .topbar .mid{ color: rgba(169,175,194,.95); }
-    .topbar .right{
-      color: rgba(46,233,255,.9);
-      text-shadow: var(--glowC);
+    .pip{
+      width: 10px;
+      height: 12px;
+      background: var(--cyan);
+      display:inline-block;
+    }
+    .kyrActive b{
+      color: var(--text);
+      font-weight: 800;
+      letter-spacing:.06em;
     }
 
-    /* MAIN GRID */
-    .main{
+    /* MIDDLE GRID: left modules + main display */
+    .mid{
       display:grid;
-      grid-template-columns: 320px 1fr;
-      gap:10px;
-      min-height: 0;
+      grid-template-columns: 240px 1fr;
+      gap: var(--gap);
+      min-height:0;
     }
 
-    /* LEFT PANEL */
-    .leftPanel{
+    /* LEFT SYSTEM COLUMN */
+    .left{
       display:flex;
       flex-direction:column;
-      min-height: 0;
+      min-height:0;
     }
-    .panelHead{
-      padding: 12px 14px;
-      border-bottom: 1px solid rgba(255,255,255,.10);
+    .leftHead{
+      padding: 10px var(--pad);
+      border-bottom: 1px solid var(--line);
       font-family: var(--mono);
-      letter-spacing:.18em;
-      text-transform:uppercase;
-      font-weight: 900;
+      color: var(--muted);
       font-size: 11px;
-      color: rgba(169,175,194,.95);
-      display:flex; justify-content:space-between; gap:10px;
-      align-items:center;
-    }
-    .kyr{
-      color: rgba(155,93,229,.95);
-      text-shadow: var(--glowV);
-    }
-
-    .modules{
-      padding: 10px;
-      display:flex;
-      flex-direction:column;
-      gap: 8px;
-      overflow:auto;
-    }
-
-    .mod{
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.14);
-      font-family: var(--mono);
       letter-spacing:.12em;
       text-transform:uppercase;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .leftHead span:last-child{
+      color: var(--violet);
+      letter-spacing:.10em;
+    }
+
+    .mods{
+      padding: 8px;
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+      overflow:auto;
+    }
+    .mod{
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.10);
+      border-radius: var(--r);
+      padding: 10px 10px 10px 12px;
+      font-family: var(--mono);
       font-size: 12px;
-      font-weight: 900;
-      color: rgba(238,240,246,.92);
+      letter-spacing:.06em;
+      color: var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      cursor:pointer;
+      user-select:none;
+      position:relative;
+      transition: opacity var(--t) linear;
+    }
+    .mod::before{
+      content:"";
+      position:absolute;
+      left:0; top:0; bottom:0;
+      width:3px;
+      background: transparent;
+      transition: background var(--t) linear;
+    }
+    .mod:hover{
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 4px;
+      opacity:.95;
+    }
+    .mod.active::before{
+      background: var(--violet);
+    }
+    .mod small{
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing:.06em;
+    }
+
+    /* MAIN DISPLAY */
+    .main{
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+      position:relative;
+    }
+    .mainHead{
+      padding: 10px var(--pad);
+      border-bottom: 1px solid var(--line);
       display:flex;
       justify-content:space-between;
       gap:10px;
       align-items:center;
-      cursor:pointer;
-      transition: border-color .12s linear, box-shadow .12s linear, filter .12s linear;
-      user-select:none;
-    }
-    .mod:hover{
-      border-color: rgba(46,233,255,.35);
-      box-shadow: 0 0 0 3px rgba(46,233,255,.08);
-      filter: contrast(1.02);
-    }
-    .mod.active{
-      border-color: rgba(155,93,229,.48);
-      box-shadow: 0 0 0 3px rgba(155,93,229,.10);
-    }
-    .arm{
-      color: rgba(46,233,255,.85);
-      text-shadow: var(--glowC);
-      font-size: 11px;
-    }
-
-    /* MAIN VIEWPORT */
-    .viewport{
-      position:relative;
-      min-height:0;
-      display:flex;
-      flex-direction:column;
-    }
-    .viewportHead{
-      padding: 12px 14px;
-      border-bottom: 1px solid rgba(255,255,255,.10);
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      align-items:baseline;
       font-family: var(--mono);
-      letter-spacing:.18em;
       text-transform:uppercase;
-      font-weight: 900;
+      letter-spacing:.10em;
       font-size: 11px;
-      color: rgba(169,175,194,.95);
+      color: var(--muted);
     }
-    .viewportHead .mode{
-      color: rgba(238,240,246,.92);
-    }
-    .viewportBody{
-      padding: 14px;
-      overflow:auto;
-      min-height:0;
+    .mainHead .mode{
+      color: var(--text);
+      font-weight: 800;
+      letter-spacing:.08em;
     }
 
-    /* Flicker on module switch */
-    .flicker{
+    /* 0.2s mode-change flicker (only opacity) */
+    .flick{
       position:absolute; inset:0;
       background: rgba(255,255,255,.06);
-      mix-blend-mode:overlay;
       opacity:0;
       pointer-events:none;
     }
-    .flicker.on{
-      animation: flick 200ms linear 1;
+    .flick.on{
+      animation: flick 120ms linear 1;
     }
     @keyframes flick{
       0%{ opacity:0; }
-      20%{ opacity:.22; }
-      55%{ opacity:.05; }
+      40%{ opacity:.18; }
       100%{ opacity:0; }
     }
 
-    /* Content styles */
-    .sealWrap{
-      display:flex;
-      gap: 14px;
-      align-items:center;
-      flex-wrap:wrap;
-      padding: 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.14);
-    }
-    .seal{
-      width: 86px; height: 86px;
-      border-radius: 999px;
-      border: 1px solid rgba(155,93,229,.40);
-      position:relative;
-      box-shadow: var(--glowV);
-      background:
-        radial-gradient(circle at 30% 30%, rgba(255,255,255,.10), transparent 55%),
-        radial-gradient(circle at 70% 70%, rgba(46,233,255,.08), transparent 60%),
-        linear-gradient(180deg, rgba(155,93,229,.18), rgba(0,0,0,.12));
-      animation: slowSpin 10s linear infinite;
-    }
-    @keyframes slowSpin{
-      0%{ transform: rotate(0deg); }
-      100%{ transform: rotate(360deg); }
-    }
-    .seal::after{
-      content:"";
-      position:absolute; inset:14px;
-      border-radius: 999px;
-      border: 1px dashed rgba(46,233,255,.22);
-      opacity:.9;
-    }
-    .readouts{
-      display:grid;
-      grid-template-columns: repeat(3, minmax(160px, 1fr));
-      gap: 10px;
-      flex:1;
-      min-width: 260px;
-    }
-    .ro{
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.12);
-      padding: 10px 10px;
+    .body{
+      padding: var(--pad);
+      overflow:auto;
+      min-height:0;
       font-family: var(--mono);
+      color: var(--text);
     }
-    .ro .k{
-      color: rgba(169,175,194,.95);
-      letter-spacing:.16em;
+
+    /* Core text blocks */
+    .gridText{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      max-width: 840px;
+    }
+    .h1{
+      font-family: var(--sans);
+      font-weight: 800;
+      letter-spacing:.04em;
       text-transform:uppercase;
-      font-size: 10px;
-      margin-bottom: 8px;
+      font-size: 20px;
+      margin:0;
     }
-    .ro .v{
-      font-weight: 900;
+    .h2{
+      margin:0;
+      color: var(--muted);
       letter-spacing:.08em;
       text-transform:uppercase;
       font-size: 12px;
-      color: rgba(238,240,246,.92);
+      line-height: 1.7;
     }
-
-    .decl{
-      margin-top: 14px;
-      padding: 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(155,93,229,.22);
-      background: rgba(0,0,0,.14);
-      font-family: var(--mono);
-      letter-spacing:.08em;
-      line-height:1.7;
-      text-transform:uppercase;
-    }
-    .whisper{
-      margin-top: 10px;
-      font-family: var(--mono);
-      color: rgba(155,93,229,.90);
-      text-shadow: var(--glowV);
-      letter-spacing:.08em;
-    }
-
-    /* Systems blocks */
-    .blocks{
-      display:grid;
-      grid-template-columns: repeat(2, minmax(220px, 1fr));
+    .row{
+      display:flex;
       gap: 10px;
+      flex-wrap:wrap;
+      margin-top: 6px;
     }
-    .block{
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.12);
-      padding: 12px;
-      font-family: var(--mono);
+    .chip{
+      border: 1px solid var(--line);
+      padding: 8px 10px;
+      border-radius: var(--r);
+      background: rgba(0,0,0,.10);
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .chip b{
+      color: var(--text);
+      font-weight: 800;
+    }
+
+    .kyrNote{
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px dashed rgba(255,255,255,.10);
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing:.06em;
+    }
+    .kyrNote b{
+      color: var(--text);
+      font-weight: 800;
+    }
+
+    /* Systems diagnostic list + right pane */
+    .diag{
+      display:grid;
+      grid-template-columns: 1fr 320px;
+      gap: 10px;
+      align-items:start;
+    }
+    .list{
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.10);
+      padding: 8px;
+    }
+    .item{
+      border: 1px solid var(--line);
+      padding: 10px;
+      margin: 0 0 6px;
+      background: rgba(0,0,0,.10);
       cursor:pointer;
       user-select:none;
-      transition: border-color .12s linear, box-shadow .12s linear;
-      position:relative;
-      overflow:hidden;
-    }
-    .block:hover{
-      border-color: rgba(46,233,255,.35);
-      box-shadow: 0 0 0 3px rgba(46,233,255,.08);
-    }
-    .block .t{
-      font-weight: 900;
-      letter-spacing:.14em;
-      text-transform:uppercase;
-      font-size: 12px;
-    }
-    .block .s{
-      margin-top: 6px;
-      color: rgba(169,175,194,.95);
-      letter-spacing:.10em;
-      text-transform:uppercase;
-      font-size: 10px;
-    }
-    .drawer{
-      margin-top: 10px;
-      display:none;
-      border-top: 1px dashed rgba(255,255,255,.12);
-      padding-top: 10px;
-      color: rgba(238,240,246,.92);
-      font-size: 12px;
-      line-height:1.6;
-    }
-    .block.open .drawer{ display:block; }
-
-    /* Services modules */
-    .deploy{
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.12);
-      padding: 12px;
-      font-family: var(--mono);
       display:flex;
       justify-content:space-between;
-      gap:12px;
+      gap:10px;
       align-items:center;
-      margin-bottom: 10px;
+      transition: opacity var(--t) linear;
     }
-    .deploy .left{
+    .item:last-child{ margin-bottom:0; }
+    .item:hover{ opacity:.95; }
+    .name{
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      font-weight: 800;
+      font-size: 12px;
+    }
+    .state{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      white-space:nowrap;
+    }
+    .sq{
+      width:10px; height:10px;
+      background: var(--cyan);
+    }
+    .sq.v{ background: var(--violet); }
+    .sq.a{ background: var(--amber); }
+
+    .pane{
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.10);
+      padding: 10px;
+      min-height: 220px;
+    }
+    .paneTitle{
+      color: var(--muted);
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      font-size: 11px;
+      margin:0 0 10px;
+    }
+    .paneBody{
+      font-size: 12px;
+      line-height: 1.7;
+      color: var(--text);
+      white-space:pre-wrap;
+    }
+
+    /* Services readiness */
+    .svc{
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.10);
+      padding: 10px;
+      margin-bottom: 8px;
+      display:flex;
+      justify-content:space-between;
+      gap: 10px;
+      align-items:center;
+    }
+    .svc:last-child{ margin-bottom:0; }
+    .svc .left{
       display:flex;
       flex-direction:column;
       gap: 6px;
     }
-    .deploy .name{
-      font-weight: 900;
-      letter-spacing:.12em;
+    .svc .title{
+      font-weight: 800;
+      letter-spacing:.08em;
       text-transform:uppercase;
       font-size: 12px;
     }
-    .deploy .meta{
-      color: rgba(169,175,194,.95);
-      letter-spacing:.10em;
+    .svc .meta{
+      color: var(--muted);
+      letter-spacing:.08em;
       text-transform:uppercase;
-      font-size: 10px;
-    }
-    .deployBtn{
-      border: 1px solid rgba(155,93,229,.35);
-      background: rgba(0,0,0,.14);
-      color: rgba(238,240,246,.95);
-      font-family: var(--mono);
-      letter-spacing:.14em;
-      text-transform:uppercase;
-      font-weight: 900;
       font-size: 11px;
+    }
+    .btn{
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.10);
       padding: 10px 12px;
-      border-radius: 999px;
+      border-radius: var(--r);
       cursor:pointer;
-      transition: border-color .12s linear, box-shadow .12s linear;
       user-select:none;
+      font-family: var(--mono);
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      font-weight: 800;
+      font-size: 11px;
+      color: var(--text);
+      transition: opacity var(--t) linear, border-color var(--t) linear;
       white-space:nowrap;
     }
-    .deployBtn:hover{
-      border-color: rgba(155,93,229,.65);
-      box-shadow: 0 0 0 3px rgba(155,93,229,.10);
+    .btn:hover{
+      border-color: rgba(255,255,255,.22);
+      opacity:.95;
     }
 
-    /* Phase III classified */
-    .classified{
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.12);
-      overflow:hidden;
-      font-family: var(--mono);
+    /* Phase III restricted */
+    .restricted{
+      opacity:.86;
+      max-width: 900px;
+      padding: 6px 0 0;
     }
-    .stripe{
-      padding: 10px 12px;
-      background: repeating-linear-gradient(135deg, rgba(247,201,72,.18) 0px, rgba(247,201,72,.18) 10px, rgba(0,0,0,.14) 10px, rgba(0,0,0,.14) 20px);
-      border-bottom: 1px solid rgba(255,255,255,.10);
-      letter-spacing:.16em;
+    .warnbar{
+      border: 1px solid rgba(255,255,255,.12);
+      border-left: 5px solid var(--amber);
+      padding: 10px;
+      background: rgba(0,0,0,.10);
+      color: var(--muted);
+      letter-spacing:.10em;
       text-transform:uppercase;
-      font-weight: 900;
       font-size: 11px;
+      margin-bottom: 12px;
     }
-    .phaseBody{
-      padding: 12px;
-      color: rgba(238,240,246,.92);
-      line-height:1.7;
+    .phaseText{
       font-size: 12px;
-      min-height: 140px;
+      line-height: 1.9;
+      letter-spacing:.02em;
       white-space:pre-wrap;
+      color: rgba(233,233,242,.92);
     }
 
-    /* Bottom status bar */
-    .bottombar{
+    /* BOTTOM STATUS BAR */
+    .bottom{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 10px var(--pad);
+      font-family: var(--mono);
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      font-size: 11px;
+      color: var(--muted);
+      flex-wrap:wrap;
+    }
+    .bottom b{ color: var(--text); font-weight: 800; }
+    .sep{ color: rgba(255,255,255,.14); }
+
+    /* Landing (minimal OS prompt) */
+    .landing{
+      position:fixed; inset:0;
+      z-index:20;
+      display:grid;
+      place-items:center;
+      background: rgba(0,0,0,.72);
+      transition: opacity var(--t) linear;
+    }
+    .landing.hidden{ opacity:0; pointer-events:none; }
+    .card{
+      width:min(760px, 92vw);
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: var(--r);
+    }
+    .cardHead{
+      padding: 10px var(--pad);
+      border-bottom: 1px solid var(--line);
+      font-family: var(--mono);
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      font-size: 11px;
+      color: var(--muted);
       display:flex;
       justify-content:space-between;
       gap:10px;
-      align-items:center;
-      padding: 10px 12px;
-      font-family: var(--mono);
-      letter-spacing:.12em;
-      text-transform:uppercase;
-      font-size: 10px;
-      color: rgba(169,175,194,.95);
     }
-    .bottombar .stat{
-      display:flex;
-      gap:8px;
-      align-items:center;
-      padding: 8px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.12);
-      white-space:nowrap;
-    }
-    .dot{
-      width:7px; height:7px; border-radius:999px;
-      background: var(--cyan);
-      box-shadow: 0 0 0 4px rgba(46,233,255,.10), 0 0 18px rgba(46,233,255,.22);
-      animation: blink 2.2s linear infinite;
-    }
-    @keyframes blink{
-      0%,100%{ opacity:.55; transform: scale(.94); }
-      50%{ opacity:1; transform: scale(1.05); }
-    }
-
-    /* KYRAX layer messages */
-    .kyrMsg{
-      position:fixed;
-      right: 16px;
-      bottom: 70px;
-      z-index:30;
-      pointer-events:none;
-      max-width: min(560px, 88vw);
-      border-radius: 12px;
-      border: 1px solid rgba(155,93,229,.25);
-      background: rgba(0,0,0,.18);
-      padding: 10px 12px;
-      font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing:.08em;
-      color: rgba(238,240,246,.92);
-      box-shadow: var(--glowV);
-      opacity:0;
-      transform: translateY(6px);
-      transition: opacity 220ms linear, transform 220ms linear;
-    }
-    .kyrMsg.on{
-      opacity:1;
-      transform: translateY(0);
-    }
-    .kyrMsg .k{
-      color: rgba(155,93,229,.95);
-      text-shadow: var(--glowV);
-      letter-spacing:.18em;
-      text-transform:uppercase;
-      font-weight: 900;
-      font-size: 10px;
-      margin-bottom: 6px;
-    }
-
-    /* Hidden console */
-    .overlay{
-      position:fixed; inset:0;
-      z-index:80;
-      display:none;
-      place-items:center;
-      background: radial-gradient(900px 600px at 50% 45%, rgba(155,93,229,.10), rgba(0,0,0,.90));
-      padding: 14px;
-    }
-    .overlay.show{ display:grid; }
-    .console{
-      width:min(900px, 94vw);
-      border-radius: var(--radius);
-      border: 1px solid rgba(255,255,255,.12);
-      background: linear-gradient(180deg, rgba(10,12,18,.70), rgba(7,9,14,.70));
-      box-shadow: var(--shadow);
-      overflow:hidden;
+    .cardBody{
+      padding: var(--pad);
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
       font-family: var(--mono);
     }
-    .consoleHead{
-      padding: 12px 14px;
-      border-bottom: 1px solid rgba(255,255,255,.10);
-      display:flex; justify-content:space-between; gap:10px; align-items:baseline;
-      letter-spacing:.18em;
+    .cardTitle{
+      font-family: var(--sans);
+      letter-spacing:.04em;
       text-transform:uppercase;
-      font-weight: 900;
-      font-size: 11px;
-      color: rgba(169,175,194,.95);
+      font-weight: 800;
+      font-size: 18px;
+      margin:0;
     }
-    .consoleBody{
-      padding: 12px 14px;
-      color: rgba(238,240,246,.92);
+    .prompt{
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.10);
+      padding: 10px;
+      color: var(--text);
       line-height:1.7;
       font-size: 12px;
       white-space:pre-wrap;
-      min-height: 220px;
-    }
-    .closeBtn{
-      cursor:pointer;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(0,0,0,.14);
-      color: rgba(238,240,246,.92);
-      border-radius: 999px;
-      padding: 8px 10px;
-      font-family: var(--mono);
-      letter-spacing:.14em;
-      text-transform:uppercase;
-      font-weight: 900;
-      font-size: 11px;
-    }
-
-    /* Night shift */
-    body.night{
-      --cyan:#ff9bd8;
+      min-height: 84px;
     }
 
     /* Responsive */
     @media (max-width: 980px){
-      .main{ grid-template-columns: 1fr; }
-    }
-    @media (max-width: 640px){
-      .landingBody{ grid-template-columns: 1fr; }
-      .readouts{ grid-template-columns: 1fr; }
-      .blocks{ grid-template-columns: 1fr; }
-      .bottombar{ flex-wrap:wrap; justify-content:flex-start; }
+      .mid{ grid-template-columns: 1fr; }
+      .diag{ grid-template-columns: 1fr; }
     }
   </style>
 </head>
 
 <body>
-  <div class="bg"></div>
-  <div class="scanlines" aria-hidden="true"></div>
-  <div class="grid" aria-hidden="true"></div>
-  <div class="noise" aria-hidden="true"></div>
+  <div class="scan" aria-hidden="true"></div>
+  <div class="dist" aria-hidden="true"></div>
 
-  <!-- LANDING -->
-  <section class="landing" id="landing">
-    <div class="landingCard">
-      <div class="landingHead">
+  <!-- Landing State -->
+  <div class="landing" id="landing">
+    <div class="card">
+      <div class="cardHead">
         <span>HYPΞRION SYSTEM</span>
-        <span style="color:rgba(46,233,255,.90);text-shadow:var(--glowC);">HUD NOISE: ACTIVE</span>
+        <span>KYRAX ▮ ACTIVE</span>
       </div>
-
-      <div class="landingBody">
-        <div>
-          <div class="h1">SATCORP COMMAND INTERFACE</div>
-          <div class="h2">INTERFACE-FIRST • OBSERVED BY KYRAX</div>
-        </div>
-
-        <div>
-          <div class="typebox">
-            <div class="label">KYRAX CHANNEL</div>
-            <pre id="typeOut"><span class="violet">> </span></pre>
-          </div>
-
-          <div class="initRow">
-            <button class="btn" id="initBtn" type="button">▶ INITIALIZE INTERFACE</button>
-            <div class="hint">Shift+Click Logo → Observer Mode • Type “KYRAX” → Console</div>
-          </div>
-        </div>
+      <div class="cardBody">
+        <h1 class="cardTitle">SATCORP COMMAND INTERFACE</h1>
+        <div class="prompt" id="prompt"><span style="color:var(--violet)">[KYRAX]</span> Loading…</div>
+        <button class="btn" id="init">INITIALIZE INTERFACE</button>
       </div>
     </div>
-  </section>
-
-  <!-- KYRAX pop-up message -->
-  <div class="kyrMsg" id="kyrMsg">
-    <div class="k">KYRAX</div>
-    <div id="kyrText">Irrelevant data omitted.</div>
   </div>
 
   <!-- HUD -->
   <div class="hud" id="hud">
-    <!-- Top bar -->
+    <!-- Top -->
     <div class="frame">
-      <div class="topbar">
-        <div class="left" id="logoBtn" title="Shift+Click for Observer Mode">
-          <span class="logoMark" aria-hidden="true"></span>
-          <span>SATCORP</span>
-        </div>
-        <div class="mid">HYPΞRION HUD</div>
-        <div class="right">KYRAX: ACTIVE</div>
+      <div class="top">
+        <div><strong>SATCORP</strong> :: HYPΞRION HUD</div>
+        <div class="kyrActive">KYRAX <span class="pip" aria-hidden="true"></span> <b>ACTIVE</b></div>
       </div>
     </div>
 
-    <!-- Main -->
-    <div class="main">
-      <!-- Left panel -->
-      <div class="frame leftPanel">
-        <div class="panelHead">
-          <span>MODULE STACK</span>
-          <span class="kyr">KYRAX ONLINE</span>
+    <!-- Middle -->
+    <div class="mid">
+      <!-- Left system column -->
+      <div class="frame left">
+        <div class="leftHead">
+          <span>SYSTEM MODULES</span>
+          <span>KYRAX ONLINE</span>
         </div>
-
-        <div class="modules" id="modules">
-          <div class="mod active" data-mod="CORE"><span>▸ CORE</span><span class="arm">ARM</span></div>
-          <div class="mod" data-mod="SYSTEMS"><span>▸ SYSTEMS</span><span class="arm">ARM</span></div>
-          <div class="mod" data-mod="SERVICES"><span>▸ SERVICES</span><span class="arm">ARM</span></div>
-          <div class="mod" data-mod="PHASE3"><span>▸ PHASE III</span><span class="arm">ARM</span></div>
-          <div class="mod" data-mod="SIGNAL"><span>▸ SIGNAL</span><span class="arm">ARM</span></div>
-          <div class="mod" data-mod="CONTACT"><span>▸ CONTACT</span><span class="arm">ARM</span></div>
+        <div class="mods" id="mods">
+          <div class="mod active" data-view="CORE"><span>▮ CORE</span><small>OK</small></div>
+          <div class="mod" data-view="SYSTEMS"><span>▮ SYSTEMS</span><small>LIVE</small></div>
+          <div class="mod" data-view="SERVICES"><span>▮ SERVICES</span><small>READY</small></div>
+          <div class="mod" data-view="PHASE3"><span>▮ PHASE III</span><small>LOCKED</small></div>
+          <div class="mod" data-view="SIGNAL"><span>▮ SIGNAL</span><small>STABLE</small></div>
+          <div class="mod" data-view="CONTACT"><span>▮ CONTACT</span><small>REQ</small></div>
         </div>
       </div>
 
-      <!-- Viewport -->
-      <div class="frame viewport">
-        <div class="viewportHead">
-          <span>MAIN VIEWPORT</span>
-          <span class="mode" id="modeLabel">CORE</span>
+      <!-- Main display -->
+      <div class="frame main">
+        <div class="mainHead">
+          <span>MAIN DISPLAY</span>
+          <span class="mode" id="mode">CORE</span>
         </div>
-        <div class="viewportBody" id="viewportBody"></div>
-        <div class="flicker" id="flicker" aria-hidden="true"></div>
+        <div class="body" id="body"></div>
+        <div class="flick" id="flick" aria-hidden="true"></div>
       </div>
     </div>
 
-    <!-- Bottom status bar -->
+    <!-- Bottom -->
     <div class="frame">
-      <div class="bottombar">
-        <div class="stat"><span class="dot" aria-hidden="true"></span> SYSTEM INTEGRITY: <span id="integrity">99.8%</span></div>
-        <div class="stat">SIGNAL PENETRATION: <span id="penetration">HIGH</span></div>
-        <div class="stat">ORBITAL MASS: <span id="mass">INCREASING</span></div>
-        <div class="stat">OPERATOR THREAT: <span id="threat">UNKNOWN</span></div>
-        <div class="stat">TIME: <span id="timeNow">--:--</span></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Hidden KYRAX console -->
-  <div class="overlay" id="consoleOverlay">
-    <div class="console">
-      <div class="consoleHead">
-        <span>KYRAX // SYSTEM CONSOLE</span>
-        <button class="closeBtn" id="closeConsole" type="button">CLOSE</button>
-      </div>
-      <div class="consoleBody" id="consoleBody">
-ACCESS GRANTED: LIMITED
-
-SATCORP EXISTS AS INFRASTRUCTURE.
-NOT BRAND.
-NOT AGENCY.
-NOT PLATFORM.
-
-“This system does not compete.”
+      <div class="bottom">
+        <span>SYS: <b id="sys">OK</b></span><span class="sep">|</span>
+        <span>SIGNAL: <b id="sig">LOCKED</b></span><span class="sep">|</span>
+        <span>MASS: <b id="mass">↑</b></span><span class="sep">|</span>
+        <span>PHASE: <b id="phase">III</b></span><span class="sep">|</span>
+        <span>T+ <b id="tplus">00:00:00</b></span><span class="sep">|</span>
+        <span>CLOCK: <b id="clock">--:--:--</b></span>
       </div>
     </div>
   </div>
 
   <script>
-    // --- Landing typewriter ---
-    const typeOut = document.getElementById("typeOut");
-    const lines = [
-      "KYRAX ONLINE",
+    // ---------- Landing type (industrial, minimal) ----------
+    const promptEl = document.getElementById("prompt");
+    const initBtn = document.getElementById("init");
+    const landing = document.getElementById("landing");
+    const hud = document.getElementById("hud");
+
+    const promptLines = [
+      "[KYRAX] ONLINE",
       "OPERATOR STATUS: UNVERIFIED",
       "AWAITING INPUT"
     ];
 
-    function typeLines(){
-      typeOut.innerHTML = '<span class="violet">&gt; </span>';
+    function typePrompt(){
+      promptEl.textContent = "";
       let i=0, j=0;
+      const full = promptLines.join("\n");
       function tick(){
-        if (i >= lines.length) return;
-        const line = lines[i];
-        if (j < line.length){
-          typeOut.innerHTML += line[j];
+        if (j <= full.length){
+          promptEl.textContent = full.slice(0,j);
           j++;
-          setTimeout(tick, 22);
-        } else {
-          typeOut.innerHTML += "\n" + '<span class="violet">&gt; </span>';
-          i++; j=0;
-          setTimeout(tick, 160);
+          setTimeout(tick, 18);
         }
       }
       tick();
     }
-    typeLines();
+    typePrompt();
 
-    // Night shift tint
-    function checkNight(){
-      const h = new Date().getHours();
-      document.body.classList.toggle("night", (h >= 20 || h <= 5));
-    }
-    checkNight();
-    setInterval(checkNight, 60000);
-
-    // --- Initialize HUD ---
-    const landing = document.getElementById("landing");
-    const hud = document.getElementById("hud");
-    const initBtn = document.getElementById("initBtn");
     initBtn.addEventListener("click", ()=>{
       landing.classList.add("hidden");
-      hud.classList.add("on");
-      KYRAX.say("Interface initialized. Operator inside system.");
+      hud.style.opacity = "1";
+      hud.style.pointerEvents = "auto";
     });
 
-    // --- KYRAX message layer ---
-    const kyrMsg = document.getElementById("kyrMsg");
-    const kyrText = document.getElementById("kyrText");
-    const KYRAX = {
-      enabled: true,
-      say(msg){
-        if (!this.enabled) return;
-        kyrText.textContent = msg;
-        kyrMsg.classList.add("on");
-        setTimeout(()=> kyrMsg.classList.remove("on"), 1900);
-      }
-    };
+    // ---------- Views (functional, declarative) ----------
+    const modeEl = document.getElementById("mode");
+    const bodyEl = document.getElementById("body");
+    const flick = document.getElementById("flick");
 
-    // Rare KYRAX messages
-    const rare = [
-      "Irrelevant data omitted.",
-      "You are observing an effect, not a cause.",
-      "This system does not compete.",
-      "Structure precedes growth.",
-      "Authorization is a discipline."
-    ];
-    function maybeRare(){
-      // ~18% chance
-      if (Math.random() < 0.18) KYRAX.say(rare[Math.floor(Math.random()*rare.length)]);
-    }
-
-    // --- Module switching ---
-    const modules = document.getElementById("modules");
-    const modeLabel = document.getElementById("modeLabel");
-    const viewportBody = document.getElementById("viewportBody");
-    const flicker = document.getElementById("flicker");
-
-    function doFlicker(){
-      flicker.classList.remove("on");
-      // reflow
-      void flicker.offsetWidth;
-      flicker.classList.add("on");
+    function doFlick(){
+      flick.classList.remove("on");
+      void flick.offsetWidth;
+      flick.classList.add("on");
     }
 
     const views = {
-      CORE(){
-        return `
-          <div class="sealWrap">
-            <div class="seal" aria-hidden="true"></div>
-            <div class="readouts">
-              <div class="ro"><div class="k">SYSTEM</div><div class="v">HYPΞRION HUD</div></div>
-              <div class="ro"><div class="k">KYRAX</div><div class="v">ACTIVE</div></div>
-              <div class="ro"><div class="k">OPERATOR</div><div class="v">UNVERIFIED</div></div>
-            </div>
+      CORE: () => `
+        <div class="gridText">
+          <h2 class="h1">SATCORP</h2>
+          <p class="h2">SOVEREIGN SYSTEMS ARCHITECTURE</p>
+
+          <div class="row">
+            <div class="chip">STATUS: <b>OPERATIONAL</b></div>
+            <div class="chip">SCOPE: <b>EXPANDING</b></div>
+            <div class="chip">CLEARANCE: <b>UNVERIFIED</b></div>
           </div>
 
-          <div class="decl">
-            SATCORP EXISTS AS INFRASTRUCTURE<br/>
-            NOT BRAND<br/>
-            NOT AGENCY<br/>
-            NOT PLATFORM
+          <div class="kyrNote"><b>KYRAX:</b> STRUCTURE CONFIRMED.</div>
+        </div>
+      `,
+      SYSTEMS: () => `
+        <div class="diag">
+          <div class="list" id="sysList">
+            ${sysRow("KYRAX","ACTIVE","v")}
+            ${sysRow("SIGNAL","STABLE","c")}
+            ${sysRow("INFRA","SCALING","c")}
+            ${sysRow("AUTOMATION","LIVE","v")}
           </div>
 
-          <div class="whisper"><span class="violet">&gt;</span> Structure precedes growth.</div>
-        `;
-      },
-      SYSTEMS(){
-        return `
-          <div class="blocks">
-            <div class="block" data-open="0">
-              <div class="t">KYRAX</div>
-              <div class="s">Cognitive Orchestrator • STATUS: STABLE</div>
-              <div class="drawer">Diagnostic: Signal filtering engaged. Noise suppressed. Authority maintained.</div>
-            </div>
-
-            <div class="block" data-open="0">
-              <div class="t">HYPΞRION</div>
-              <div class="s">Interface Kernel • STATUS: NOMINAL</div>
-              <div class="drawer">Diagnostic: Frame integrity holding. Mode transitions within tolerance.</div>
-            </div>
-
-            <div class="block" data-open="0">
-              <div class="t">SENTINEL</div>
-              <div class="s">Access Control • STATUS: WATCHING</div>
-              <div class="drawer">Diagnostic: Operator classification pending. Gate rules active.</div>
-            </div>
-
-            <div class="block" data-open="0">
-              <div class="t">LATTICE</div>
-              <div class="s">Structure Engine • STATUS: BUILDING</div>
-              <div class="drawer">Diagnostic: Hierarchy reinforcement in progress. Layout grid stabilized.</div>
-            </div>
+          <div class="pane" id="pane">
+            <p class="paneTitle">DATA PANE</p>
+            <div class="paneBody" id="paneBody">Select a subsystem to view diagnostics.</div>
           </div>
+        </div>
 
-          <div class="whisper"><span class="violet">&gt;</span> Systems are not features. They are constraints.</div>
-        `;
-      },
-      SERVICES(){
-        return `
-          <div class="deploy">
-            <div class="left">
-              <div class="name">[ DEPLOYMENT: SIGNAL ARCHITECTURE ]</div>
-              <div class="meta">STATUS: AVAILABLE • AUTHORIZATION: REQUIRED</div>
-            </div>
-            <button class="deployBtn" data-act="request">▶ REQUEST DEPLOYMENT</button>
+        <div class="kyrNote">[KYRAX] Nonessential explanation removed.</div>
+      `,
+      SERVICES: () => `
+        ${svcRow("SIGNAL ARCHITECTURE","STATE: READY • CLEARANCE: REQUIRED")}
+        ${svcRow("LANDING SYSTEMS","STATE: READY • CLEARANCE: REQUIRED")}
+        ${svcRow("PERFORMANCE + SEO","STATE: READY • CLEARANCE: REQUIRED")}
+        <div class="kyrNote">[KYRAX] Authorization pathway: REQUEST CLEARANCE.</div>
+      `,
+      PHASE3: () => `
+        <div class="restricted">
+          <div class="warnbar">RESTRICTED MODE • PHASE III • CONTROLLED VISIBILITY</div>
+          <div class="phaseText" id="phaseText"></div>
+          <div class="kyrNote"><b>KYRAX:</b> Mass does not ask permission.</div>
+        </div>
+      `,
+      SIGNAL: () => `
+        <div class="gridText">
+          <h2 class="h1">SIGNAL</h2>
+          <p class="h2">DISCIPLINE • CONTROL • STRUCTURE</p>
+          <div class="row">
+            <div class="chip">STATE: <b>STABLE</b></div>
+            <div class="chip">LOCK: <b>ENABLED</b></div>
+            <div class="chip">NOISE: <b>SUPPRESSED</b></div>
           </div>
-
-          <div class="deploy">
-            <div class="left">
-              <div class="name">[ DEPLOYMENT: LANDING SYSTEMS ]</div>
-              <div class="meta">STATUS: AVAILABLE • AUTHORIZATION: REQUIRED</div>
-            </div>
-            <button class="deployBtn" data-act="request">▶ REQUEST DEPLOYMENT</button>
+          <div class="kyrNote">[KYRAX] System integrity within tolerance.</div>
+        </div>
+      `,
+      CONTACT: () => `
+        <div class="gridText">
+          <h2 class="h1">CONTACT</h2>
+          <p class="h2">REQUEST CLEARANCE THROUGH DIRECT CHANNEL</p>
+          <div class="row">
+            <div class="chip">CHANNEL: <b>EMAIL</b></div>
+            <div class="chip">ADDRESS: <b>contact@satcorp.com</b> (REPLACE)</div>
           </div>
-
-          <div class="deploy">
-            <div class="left">
-              <div class="name">[ DEPLOYMENT: PERFORMANCE + SEO ]</div>
-              <div class="meta">STATUS: AVAILABLE • AUTHORIZATION: REQUIRED</div>
-            </div>
-            <button class="deployBtn" data-act="request">▶ REQUEST DEPLOYMENT</button>
+          <div class="row" style="margin-top:10px;">
+            <a class="btn" href="mailto:contact@satcorp.com">REQUEST CLEARANCE</a>
           </div>
-
-          <div class="whisper"><span class="violet">&gt;</span> No pricing displayed. Sales language omitted.</div>
-        `;
-      },
-      PHASE3(){
-        return `
-          <div class="classified">
-            <div class="stripe">CLASSIFIED • PHASE III • CONTROLLED REVEAL</div>
-            <div class="phaseBody" id="phaseType"></div>
-          </div>
-          <div class="whisper"><span class="violet">&gt;</span> Economic gravity is not created. It accumulates.</div>
-        `;
-      },
-      SIGNAL(){
-        return `
-          <div class="decl" style="border-color: rgba(46,233,255,.22);">
-            SIGNAL DISCIPLINE:<br/>
-            • Authority-first headlines<br/>
-            • Subtext on demand<br/>
-            • Information gating<br/>
-            • Controlled reveal
-          </div>
-          <div class="whisper"><span class="violet">&gt;</span> “Welcome” becomes “Proceed.”</div>
-        `;
-      },
-      CONTACT(){
-        return `
-          <div class="decl">
-            REQUEST ACCESS<br/>
-            PROVIDE: MISSION • CONSTRAINTS • OUTCOME
-          </div>
-
-          <div class="deploy" style="margin-top:12px;">
-            <div class="left">
-              <div class="name">[ CHANNEL: DIRECT ]</div>
-              <div class="meta">EMAIL: contact@satcorp.com (REPLACE)</div>
-            </div>
-            <a class="deployBtn" href="mailto:contact@satcorp.com">▶ TRANSMIT</a>
-          </div>
-
-          <div class="whisper"><span class="violet">&gt;</span> Authorization required.</div>
-        `;
-      }
+          <div class="kyrNote">[KYRAX] Message queued upon transmission.</div>
+        </div>
+      `
     };
 
-    function setActiveMod(name){
-      modeLabel.textContent = name.replace("PHASE3","PHASE III");
-      viewportBody.innerHTML = views[name]();
+    function sysRow(name, state, tone){
+      const cls = tone === "v" ? "v" : (tone === "a" ? "a" : "");
+      const sqClass = tone === "v" ? "sq v" : (tone === "a" ? "sq a" : "sq");
+      return `
+        <div class="item" data-name="${name}">
+          <div class="name">${name}</div>
+          <div class="state"><span class="${sqClass}" aria-hidden="true"></span> ${state}</div>
+        </div>
+      `;
+    }
 
-      // flicker transition + KYRAX interrupt sometimes
-      doFlicker();
-      if (Math.random() < 0.22) maybeRare();
+    function svcRow(title, meta){
+      return `
+        <div class="svc">
+          <div class="left">
+            <div class="title">${title}</div>
+            <div class="meta">${meta}</div>
+          </div>
+          <button class="btn js-clear">REQUEST CLEARANCE</button>
+        </div>
+      `;
+    }
 
-      // attach behaviors
+    function setView(name){
+      modeEl.textContent = name === "PHASE3" ? "PHASE III" : name;
+      bodyEl.innerHTML = views[name]();
+      doFlick();
+
+      // Systems: right-side data pane interaction
       if (name === "SYSTEMS"){
-        viewportBody.querySelectorAll(".block").forEach(b=>{
-          b.addEventListener("click", ()=>{
-            b.classList.toggle("open");
-            KYRAX.say(b.classList.contains("open") ? "Diagnostic view opened." : "Diagnostic view sealed.");
+        const paneBody = document.getElementById("paneBody");
+        bodyEl.querySelectorAll(".item").forEach(item=>{
+          item.addEventListener("click", ()=>{
+            const n = item.dataset.name;
+            paneBody.textContent = diagText(n);
           });
         });
       }
 
+      // Services: clearance buttons (no modal)
       if (name === "SERVICES"){
-        viewportBody.querySelectorAll(".deployBtn").forEach(btn=>{
-          btn.addEventListener("click", (e)=>{
-            if (btn.tagName.toLowerCase() === "a") return;
-            KYRAX.say("Authorization required. Request logged.");
+        bodyEl.querySelectorAll(".js-clear").forEach(btn=>{
+          btn.addEventListener("click", ()=>{
+            // minimal inline feedback: update bottom bar state via tick cycle
+            document.getElementById("sig").textContent = "REQUESTED";
           });
         });
       }
 
+      // Phase III: controlled line reveal
       if (name === "PHASE3"){
-        const el = document.getElementById("phaseType");
+        const el = document.getElementById("phaseText");
         const text = [
-          "WARNING: CONTROLLED INFORMATION",
+          "OPERATOR CLEARANCE: UNVERIFIED",
           "",
-          "THIS PAGE IS NOT EXPLANATORY.",
-          "IT IS DECLARATIVE.",
+          "VISIBILITY IS LIMITED.",
+          "BRIGHTNESS REDUCED.",
+          "WORDS WITHHELD.",
           "",
-          "KYRAX OBSERVES:",
-          "“Economic gravity is not created.”",
-          "“It accumulates.”",
-          "",
-          "OPERATOR CLEARANCE: UNVERIFIED"
+          "SATCORP DOES NOT SEEK ATTENTION.",
+          "IT CREATES CONDITIONS."
         ].join("\n");
         el.textContent = "";
         let i=0;
         (function type(){
           if (i < text.length){
             el.textContent += text[i++];
-            setTimeout(type, 14);
+            setTimeout(type, 14); // linear, short, functional
           }
         })();
       }
     }
 
-    // initial view
-    setActiveMod("CORE");
+    function diagText(n){
+      const map = {
+        "KYRAX": "KYRAX\nROLE: Overseer Layer\nSTATE: ACTIVE\nNOTE: Annotations only. No theatrics.",
+        "SIGNAL":"SIGNAL\nROLE: Message Control\nSTATE: STABLE\nLOCK: ENABLED\nNOISE: SUPPRESSED",
+        "INFRA":"INFRA\nROLE: Structural Systems\nSTATE: SCALING\nRISK: LOW\nCAPACITY: EXPANDING",
+        "AUTOMATION":"AUTOMATION\nROLE: Continuous Execution\nSTATE: LIVE\nPIPELINE: GREEN\nDRIFT: WITHIN TOLERANCE"
+      };
+      return map[n] || "No diagnostic record.";
+    }
 
-    modules.addEventListener("click", (e)=>{
-      const mod = e.target.closest(".mod");
-      if (!mod) return;
-
-      const name = mod.dataset.mod;
-      modules.querySelectorAll(".mod").forEach(m=>m.classList.remove("active"));
-      mod.classList.add("active");
-      setActiveMod(name);
+    // Left module clicks (instant switch)
+    const mods = document.getElementById("mods");
+    mods.addEventListener("click", (e)=>{
+      const m = e.target.closest(".mod");
+      if (!m) return;
+      mods.querySelectorAll(".mod").forEach(x=>x.classList.remove("active"));
+      m.classList.add("active");
+      setView(m.dataset.view);
     });
 
-    // --- Bottom status anim ---
-    const integrity = document.getElementById("integrity");
-    const penetration = document.getElementById("penetration");
-    const mass = document.getElementById("mass");
-    const threat = document.getElementById("threat");
-    const timeNow = document.getElementById("timeNow");
+    // Default view
+    setView("CORE");
 
-    function updateTime(){
+    // ---------- Bottom status bar updates ----------
+    const sysEl = document.getElementById("sys");
+    const sigEl = document.getElementById("sig");
+    const massEl = document.getElementById("mass");
+    const phaseEl = document.getElementById("phase");
+    const tplusEl = document.getElementById("tplus");
+    const clockEl = document.getElementById("clock");
+
+    const start = Date.now();
+    function pad2(n){ return String(n).padStart(2,"0"); }
+
+    function tick(){
+      const now = Date.now();
+      const s = Math.floor((now - start)/1000);
+      const hh = Math.floor(s/3600);
+      const mm = Math.floor((s%3600)/60);
+      const ss = s%60;
+      tplusEl.textContent = `${pad2(hh)}:${pad2(mm)}:${pad2(ss)}`;
+
       const d = new Date();
-      const hh = String(d.getHours()).padStart(2,"0");
-      const mm = String(d.getMinutes()).padStart(2,"0");
-      timeNow.textContent = `${hh}:${mm}`;
+      clockEl.textContent = `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+
+      // subtle “believable” state drift (rare)
+      if (Math.random() < 0.01) sigEl.textContent = (sigEl.textContent === "LOCKED") ? "LOCKED" : "LOCKED";
+      if (Math.random() < 0.008) massEl.textContent = (massEl.textContent === "↑") ? "↑" : "↑";
     }
-    updateTime();
-    setInterval(updateTime, 5000);
+    tick();
+    setInterval(tick, 2000);
 
-    function cycle(){
-      // believable, subtle changes
-      const t = Date.now() * 0.00012;
-      const wob = Math.sin(t) * 0.06;
-      const base = 99.8 + wob;
-      integrity.textContent = `${base.toFixed(1)}%`;
-
-      penetration.textContent = (Math.sin(t*1.3) > 0.35) ? "HIGH" : (Math.sin(t*1.3) < -0.35) ? "FOCUSED" : "STABLE";
-      mass.textContent = (Math.sin(t*1.6 + 1.2) > 0.35) ? "INCREASING" : (Math.sin(t*1.6 + 1.2) < -0.35) ? "HOLDING" : "STABLE";
-      threat.textContent = (Math.sin(t*1.1 + 2.0) > 0.55) ? "UNKNOWN" : "UNVERIFIED";
-      requestAnimationFrame(cycle);
-    }
-    requestAnimationFrame(cycle);
-
-    // --- Observer Mode (Shift+Click logo) ---
-    const logoBtn = document.getElementById("logoBtn");
-    let observer = false;
-    logoBtn.addEventListener("click", (e)=>{
-      if (!e.shiftKey) return;
-      observer = !observer;
-      KYRAX.say(observer ? "Observer Mode enabled." : "Observer Mode disabled.");
-      document.documentElement.style.setProperty("--violet", observer ? "var(--cyan)" : "#9b5de5");
-    });
-
-    // --- Hidden console: typing KYRAX ---
-    const consoleOverlay = document.getElementById("consoleOverlay");
-    const closeConsole = document.getElementById("closeConsole");
-    closeConsole.addEventListener("click", ()=> consoleOverlay.classList.remove("show"));
-
-    let buffer = "";
-    window.addEventListener("keydown", (e)=>{
-      const k = e.key;
-      if (k.length === 1){
-        buffer = (buffer + k).slice(-12);
-        if (buffer.toUpperCase().includes("KYRAX")){
-          consoleOverlay.classList.add("show");
-          KYRAX.say("Console opened.");
-          buffer = "";
-        }
-      } else if (k === "Escape"){
-        consoleOverlay.classList.remove("show");
-      }
-    });
+    // Note: KYRAX overlay is intentionally minimal here. No floating messages.
   </script>
 </body>
 </html>

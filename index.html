@@ -323,7 +323,6 @@
       .actions{ grid-template-columns: 1fr; }
     }
 
-    /* ===== UPDATED: button supports sublabel ===== */
     .btn{
       padding: clamp(14px, 1.6vw, 18px);
       border-radius: 16px;
@@ -350,15 +349,6 @@
       border-color: rgba(37,243,255,.44);
     }
 
-    .btn .sub{
-      font-size: 9px;
-      letter-spacing:.22em;
-      opacity:.65;
-      font-weight:600;
-      line-height:1;
-      text-transform:uppercase;
-    }
-
     .btn.primary{
       background: linear-gradient(180deg, rgba(37,243,255,.14), rgba(194,91,255,.12));
     }
@@ -373,7 +363,7 @@
       transform:none;
     }
 
-    /* ===== MISSION SELECT SHELL ===== */
+    /* ===== MISSION SELECT SHELL (kept, but no longer used for routing) ===== */
     .site{
       display:none;
       min-height:100vh;
@@ -625,7 +615,7 @@
     </section>
   </main>
 
-  <!-- MISSION SELECT SHELL -->
+  <!-- MISSION SELECT SHELL (kept; currently unused) -->
   <section class="site" id="site">
     <div class="shell">
       <div class="shellTop">
@@ -673,14 +663,22 @@
     const welcomeTextEl = document.getElementById("welcomeText");
     const mainGrid = document.getElementById("mainGrid");
 
-    const site = document.getElementById("site");
-    const kyrwrap = document.getElementById("kyrwrap");
-    const session = document.getElementById("session");
-    const stored = document.getElementById("stored");
-    const missionGrid = document.getElementById("missionGrid");
-    const briefing = document.getElementById("briefing");
-
     const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    /* ===== UPDATED: external routing map ===== */
+    const EXTERNAL_LINKS = {
+      // MISSION (set when you provide the URL)
+      login:  null,
+
+      // CONNECT (set when you provide the URL)
+      signup: null,
+
+      // UPLINK (Discord)
+      guest:  "https://discord.gg/YEE6rmKQJv",
+
+      // PULSΞ (TikTok)
+      pulse:  "https://www.tiktok.com/@pulse.studio21?_r=1&_t=ZP-9373Mu7LFPC"
+    };
 
     function setProgress(p){
       const clamped = Math.max(0, Math.min(100, Math.round(p)));
@@ -754,83 +752,28 @@
       actions.classList.remove("locked");
     }
 
-    function buildMissions(route){
-      const presets = {
-        login: {
-          brief: "Mission route selected. (placeholder)",
-          missions: [
-            { id:"M-01", name:"MISSION: OVERVIEW", tag:"INFO", meta:"Access: Public · Risk: None" },
-            { id:"M-02", name:"MISSION: TIMELINE", tag:"DATA", meta:"Access: Public · Risk: None" },
-            { id:"M-03", name:"MISSION: CHARTER", tag:"READ", meta:"Access: Public · Risk: Low" },
-            { id:"M-04", name:"MISSION: OBJECTIVES", tag:"GOALS", meta:"Access: Public · Risk: Low" }
-          ]
-        },
-        signup: {
-          brief: "Connect route selected. (placeholder)",
-          missions: [
-            { id:"C-01", name:"CONNECT: CONTACT CHANNELS", tag:"OPEN", meta:"Access: Public · Risk: None" },
-            { id:"C-02", name:"CONNECT: SUPPORT LINE", tag:"HELP", meta:"Access: Public · Risk: None" },
-            { id:"C-03", name:"CONNECT: PARTNERSHIP", tag:"BIZ", meta:"Access: Public · Risk: Low" },
-            { id:"C-04", name:"CONNECT: REQUEST ACCESS", tag:"FORM", meta:"Access: Public · Risk: Low" }
-          ]
-        },
-        guest: {
-          brief: "Uplink route selected. (placeholder — wire to Discord later)",
-          missions: [
-            { id:"U-01", name:"UPLINK: COMMUNITY NODE", tag:"JOIN", meta:"Access: External · Risk: None" },
-            { id:"U-02", name:"UPLINK: ANNOUNCEMENTS", tag:"NEWS", meta:"Access: External · Risk: None" },
-            { id:"U-03", name:"UPLINK: ROLES & RULES", tag:"READ", meta:"Access: External · Risk: None" },
-            { id:"U-04", name:"UPLINK: EVENTS", tag:"LIVE", meta:"Access: External · Risk: Low" }
-          ]
-        },
-        pulse: {
-          brief: "PULSΞ route selected. Broadcast layer placeholder.",
-          missions: [
-            { id:"P-01", name:"PULSΞ: SIGNAL UPLINK", tag:"LIVE", meta:"Access: Channel · Risk: Medium" },
-            { id:"P-02", name:"PULSΞ: TRANSMISSION FRAME", tag:"HUD", meta:"Access: Channel · Risk: Low" },
-            { id:"P-03", name:"PULSΞ: MESSAGE QUEUE", tag:"QUEUE", meta:"Access: Channel · Risk: Low" },
-            { id:"P-04", name:"PULSΞ: ARCHIVE", tag:"READ", meta:"Access: Channel · Risk: Low" }
-          ]
-        }
-      };
-
-      const data = presets[route] || presets.login;
-
-      briefing.textContent = data.brief;
-      missionGrid.innerHTML = data.missions.map(m => `
-        <div class="mission">
-          <div class="mTop">
-            <span>${m.id}</span>
-            <span class="tag">${m.tag}</span>
-          </div>
-          <div class="mName">${m.name}</div>
-          <div class="mMeta">${m.meta}</div>
-        </div>
-      `).join("");
-    }
-
     (async ()=>{
       mainGrid.classList.remove("show");
       await bootBarFill();
       await runSequence();
     })();
 
+    /* ===== UPDATED: buttons open external links ===== */
     document.querySelectorAll("[data-act]").forEach(btn=>{
       btn.addEventListener("click", ()=>{
         if (actions.classList.contains("locked")) return;
 
         const act = btn.getAttribute("data-act");
-        const label = act.toUpperCase();
 
+        // store selection
         localStorage.setItem("kyrChoice_v1", act);
 
-        session.textContent = "SESSION: " + label;
-        stored.textContent = "ROUTE: " + label + "  //  KEY: kyrChoice_v1 = " + act;
+        // route externally
+        const url = EXTERNAL_LINKS[act];
+        if (!url) return; // not wired yet (MISSION / CONNECT)
 
-        buildMissions(act);
-
-        kyrwrap.style.display = "none";
-        site.classList.add("on");
+        const w = window.open(url, "_blank", "noopener,noreferrer");
+        if (!w) window.location.href = url;
       });
     });
   </script>

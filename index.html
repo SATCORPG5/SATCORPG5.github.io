@@ -297,6 +297,30 @@
       min-height: 220px;
     }
 
+    /* ===== NEW: SYSTEM NOTES (pulses in/out after standby) ===== */
+    .sysnotes{
+      padding: 0 clamp(16px, 2vw, 22px) 16px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      color: rgba(183,183,214,.92);
+      border-top: 1px solid rgba(37,243,255,.10);
+      opacity: 0;
+      transform: translateY(2px);
+      transition: opacity 180ms ease, transform 180ms ease;
+      user-select: none;
+      min-height: 20px;
+    }
+    .sysnotes.on{
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .sysnotes b{
+      color: rgba(242,242,255,.95);
+      font-weight: 900;
+    }
+
     .actions{
       padding: clamp(16px, 2vw, 22px);
       display:grid;
@@ -570,6 +594,9 @@
 
           <div class="log" id="kyrLog"></div>
 
+          <!-- NEW: pulsing system notes (after standby only) -->
+          <div class="sysnotes" id="sysNotes" aria-live="polite"></div>
+
           <!-- UPDATED BUTTONS: sublabels added -->
           <div class="actions locked" id="actions">
             <button class="btn" data-act="login" type="button">
@@ -652,6 +679,8 @@
     const missionGrid = document.getElementById("missionGrid");
     const briefing = document.getElementById("briefing");
 
+    const sysNotes = document.getElementById("sysNotes");
+
     const sleep = ms => new Promise(r => setTimeout(r, ms));
 
     function setProgress(p){
@@ -684,6 +713,57 @@
         await sleep(stepMs);
       }
       setProgress(100);
+    }
+
+    // ===== SYSTEM NOTES: starts after standby, pulses in/out, cycles lines =====
+    let sysTimer = null;
+
+    function stopSystemNotes(){
+      if (sysTimer) clearInterval(sysTimer);
+      sysTimer = null;
+    }
+
+    function startSystemNotesAfterStandby(){
+      if (!sysNotes) return;
+      stopSystemNotes();
+
+      const lines = [
+        "THERMAL: NOMINAL",
+        "NODE SYNC: 98%",
+        "LATENCY: 14ms"
+      ];
+
+      let i = 0;
+
+      // timing
+      const SHOW_MS = 1400;   // visible time
+      const HIDE_MS = 650;    // hidden time
+      const FADE_MS = 180;    // must match CSS transition
+
+      function render(){
+        sysNotes.innerHTML = 'SYSTΞM NOTΞS: <b>' + lines[i] + '</b>';
+      }
+
+      function show(){
+        render();
+        requestAnimationFrame(() => sysNotes.classList.add("on"));
+      }
+
+      function hide(){
+        sysNotes.classList.remove("on");
+      }
+
+      // start
+      show();
+
+      // loop: show -> hide -> wait -> next -> show
+      sysTimer = setInterval(() => {
+        hide();
+        setTimeout(() => {
+          i = (i + 1) % lines.length;
+          show();
+        }, FADE_MS + HIDE_MS);
+      }, SHOW_MS + FADE_MS + HIDE_MS);
     }
 
     // After bar fill, show the rest, then run typing sequence in log
@@ -733,6 +813,9 @@
       kyrStatus.textContent = "STΛNDBY";
       kyrMsg.textContent = "IDLΞ";
       actions.classList.remove("locked");
+
+      // Start pulsing notes ONLY after standby
+      startSystemNotesAfterStandby();
     }
 
     function buildMissions(route){

@@ -120,44 +120,27 @@
       filter: drop-shadow(0 0 12px rgba(37,243,255,.3));
     }
 
+    /* UPDATED TITLE */
     .title{
       margin:0;
       font-weight:900;
       letter-spacing:.14em;
       text-transform:uppercase;
-      font-size:40px;
+      font-size:36px;
       background: linear-gradient(90deg, var(--cyan), var(--violet2));
       -webkit-background-clip:text;
       background-clip:text;
       color:transparent;
     }
 
-    .sub{
-      font-family:var(--mono);
-      font-size:11px;
-      letter-spacing:.12em;
-      text-transform:uppercase;
-      color:var(--muted);
-      margin-top:6px;
-    }
-
-    .telemetry{
-      margin-top:14px;
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:10px;
-    }
-
-    .card{
-      border:1px solid var(--line);
-      border-radius:14px;
-      padding:10px;
+    .subtitle{
       font-family:var(--mono);
       font-size:12px;
-      color: var(--muted);
+      letter-spacing:.12em;
+      color:var(--muted);
+      margin-top:8px;
+      line-height:1.6;
     }
-
-    .card strong{ color: var(--text); font-weight:900; }
 
     .box{
       border:1px solid var(--line);
@@ -218,13 +201,11 @@
       background: rgba(255,106,42,.12);
     }
 
-    /* Locked during boot/sequence */
     .actions.locked .btn{
       opacity:.38;
       pointer-events:none;
     }
 
-    /* MAIN SITE */
     .site{
       display:none;
       min-height:100vh;
@@ -233,19 +214,6 @@
       margin:auto;
     }
     .site.on{ display:block; }
-
-    .topbar{
-      display:flex;
-      justify-content:space-between;
-      border-bottom:1px solid var(--line);
-      padding-bottom:14px;
-      margin-bottom:14px;
-      font-family:var(--mono);
-      letter-spacing:.16em;
-      text-transform:uppercase;
-      font-size:11px;
-      color: var(--muted);
-    }
   </style>
 </head>
 
@@ -263,19 +231,12 @@
       <div class="panel">
         <div class="idRow">
           <div class="logo">
-            <img src="kyrax-wolf.png" alt="KYRAX" onerror="this.style.display='none'">
+            <img src="kyrax-wolf.png" alt="" onerror="this.style.display='none'">
           </div>
           <div>
-            <h1 class="title">KYRAX</h1>
-            <div class="sub">IN-GAME AI INTERFACE</div>
+            <h1 class="title">SATCORP</h1>
+            <div class="subtitle">You arrived exactly when expected</div>
           </div>
-        </div>
-
-        <div class="telemetry">
-          <div class="card">NODE: <strong>HYPΞRION CORE</strong></div>
-          <div class="card">UPLINK: <strong id="uplink">NEGOTIATING…</strong></div>
-          <div class="card">THREAT: <strong id="threat">LOW</strong></div>
-          <div class="card">OPERATOR: <strong id="operator">UNASSIGNED</strong></div>
         </div>
       </div>
 
@@ -298,10 +259,7 @@
 </main>
 
 <section class="site" id="site">
-  <div class="topbar">
-    <span>HYPΞRION</span>
-    <span id="session">SESSION: —</span>
-  </div>
+  <p id="session"></p>
   <p id="stored"></p>
 </section>
 
@@ -310,94 +268,56 @@
   const kyrStatus = document.getElementById("kyrStatus");
   const kyrMsg = document.getElementById("kyrMsg");
   const actions = document.getElementById("actions");
-
-  const uplink = document.getElementById("uplink");
-  const operatorEl = document.getElementById("operator");
-
   const site = document.getElementById("site");
   const kyrwrap = document.getElementById("kyrwrap");
   const session = document.getElementById("session");
   const stored = document.getElementById("stored");
 
-  // REQUIRED BEHAVIOR:
-  // 1) Type "[KYRAX] Uplink negotiation…" at normal speed
-  // 2) Short pause
-  // 3) Append " STABLE" instantly (not typed)
-  // 4) Then type "[KYRAX] Standing by..." on the next line
-  // 5) After both are present, nothing disappears and nothing repeats
-
-  const TYPE_SPEED = 55;     // normal typing speed
+  const TYPE_SPEED = 55;
   const PAUSE_BEFORE_STABLE = 450;
   const PAUSE_BEFORE_STANDBY = 250;
 
-  let running = true;
   const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-  function setLogLines(lines){
-    kyrLog.textContent = lines.join("\n");
-  }
+  async function sequence(){
+    const line1 = "[KYRAX] Uplink negotiation…";
+    const line2 = "[KYRAX] Standing by...";
 
-  async function typeIntoLine(existingLines, lineIndex, fullText){
     let out = "";
-    for (const c of fullText){
-      if (!running) return;
+    kyrLog.textContent = "";
+
+    for (const c of line1){
       out += c;
-      const lines = [...existingLines];
-      lines[lineIndex] = out;
-      setLogLines(lines);
+      kyrLog.textContent = out;
       await sleep(TYPE_SPEED);
     }
-  }
 
-  async function bootThenStandby(){
-    kyrStatus.textContent = "BOOT";
-    kyrMsg.textContent = "LINKING";
-    setLogLines(["", ""]); // reserve 2 lines
-
-    // Line 1: type "negotiation…" (without STABLE)
-    const line1Base = "[KYRAX] Uplink negotiation…";
-    await typeIntoLine(["", ""], 0, line1Base);
-
-    // pause, then append STABLE instantly
     await sleep(PAUSE_BEFORE_STABLE);
+    kyrLog.textContent = line1 + " STABLE\n";
 
-    setLogLines([line1Base + " STABLE", ""]);
-
-    // slight pause, then type standing by on line 2
     await sleep(PAUSE_BEFORE_STANDBY);
+    out = "";
+    for (const c of line2){
+      out += c;
+      kyrLog.textContent = line1 + " STABLE\n" + out;
+      await sleep(TYPE_SPEED);
+    }
 
     kyrStatus.textContent = "STANDBY";
     kyrMsg.textContent = "IDLE";
-    uplink.textContent = "STABLE";
-
-    const line2 = "[KYRAX] Standing by...";
-    await typeIntoLine([line1Base + " STABLE", ""], 1, line2);
-
-    // Unlock buttons after sequence completes
     actions.classList.remove("locked");
-    operatorEl.textContent = "UNASSIGNED";
   }
 
-  bootThenStandby();
+  sequence();
 
-  // BUTTON ROUTING
   document.querySelectorAll("[data-act]").forEach(btn=>{
     btn.onclick = ()=>{
       if (actions.classList.contains("locked")) return;
-
-      running = false;
       const act = btn.dataset.act;
-
-      kyrStatus.textContent = "ROUTE";
-      kyrMsg.textContent = "SET";
-      operatorEl.textContent = "ACTIVE";
-
       kyrLog.textContent += "\n[KYRAX] ROUTE SELECTED: " + act.toUpperCase();
-
       localStorage.setItem("kyrChoice_v1", act);
-      session.textContent = "SESSION: " + act.toUpperCase();
-      stored.textContent = "kyrChoice_v1 = " + act;
-
+      session.textContent = act.toUpperCase();
+      stored.textContent = act;
       kyrwrap.style.display = "none";
       site.classList.add("on");
     };

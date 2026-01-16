@@ -613,26 +613,12 @@
 
           <div class="log" id="kyrLog"></div>
 
+          <!-- UPDATED: button names -->
           <div class="actions locked" id="actions">
-            <button class="btn" data-act="login" type="button">
-              AUTHENTICATE
-              <span class="sub">SIGN IN</span>
-            </button>
-
-            <button class="btn" data-act="signup" type="button">
-              NΞW OPΞRΛTOR
-              <span class="sub">SIGN UP</span>
-            </button>
-
-            <button class="btn primary" data-act="guest" type="button">
-              SIMULATION MODE
-              <span class="sub">JOIN AS GUEST</span>
-            </button>
-
-            <button class="btn alert" data-act="pulse" type="button">
-              PULSΞ
-              <span class="sub">LIVE SENTIENT RADIO</span>
-            </button>
+            <button class="btn" data-act="login" type="button">MISSION</button>
+            <button class="btn" data-act="signup" type="button">CONNECT</button>
+            <button class="btn primary" data-act="guest" type="button">UPLINK</button>
+            <button class="btn alert" data-act="pulse" type="button">PULSΞ</button>
           </div>
         </div>
       </div>
@@ -771,44 +757,44 @@
     function buildMissions(route){
       const presets = {
         login: {
-          brief: "Authenticated route selected. Operator privileges will be applied to mission nodes.",
+          brief: "Mission route selected. (placeholder)",
           missions: [
-            { id:"A-01", name:"SECURE NODE: AUTH GATE", tag:"PRIORITY", meta:"Access: Operator · Risk: Low" },
-            { id:"B-14", name:"SYSTEMS CHECK: CORE LATTICE", tag:"VERIFY", meta:"Access: Operator · Risk: Medium" },
-            { id:"C-09", name:"DEPLOYMENT: SECTOR NAMTAR", tag:"DEPLOY", meta:"Access: Operator · Risk: High" },
-            { id:"D-22", name:"ARCHIVE: KYRAX MEMORY BANK", tag:"READ", meta:"Access: Operator · Risk: Low" }
+            { id:"M-01", name:"MISSION: OVERVIEW", tag:"INFO", meta:"Access: Public · Risk: None" },
+            { id:"M-02", name:"MISSION: TIMELINE", tag:"DATA", meta:"Access: Public · Risk: None" },
+            { id:"M-03", name:"MISSION: CHARTER", tag:"READ", meta:"Access: Public · Risk: Low" },
+            { id:"M-04", name:"MISSION: OBJECTIVES", tag:"GOALS", meta:"Access: Public · Risk: Low" }
           ]
         },
         signup: {
-          brief: "New operator registration route selected. Limited nodes available until verification.",
+          brief: "Connect route selected. (placeholder)",
           missions: [
-            { id:"R-00", name:"REGISTRATION: OPERATOR SHELL", tag:"ONBOARD", meta:"Access: Limited · Risk: Low" },
-            { id:"T-03", name:"TRAINING: SIMULATION DRILL", tag:"SIM", meta:"Access: Limited · Risk: Low" },
-            { id:"V-07", name:"VERIFICATION: IDENTITY CHECK", tag:"VERIFY", meta:"Access: Limited · Risk: Medium" },
-            { id:"S-11", name:"SYSTEM TOUR: BRIDGE UI", tag:"INFO", meta:"Access: Limited · Risk: Low" }
+            { id:"C-01", name:"CONNECT: CONTACT CHANNELS", tag:"OPEN", meta:"Access: Public · Risk: None" },
+            { id:"C-02", name:"CONNECT: SUPPORT LINE", tag:"HELP", meta:"Access: Public · Risk: None" },
+            { id:"C-03", name:"CONNECT: PARTNERSHIP", tag:"BIZ", meta:"Access: Public · Risk: Low" },
+            { id:"C-04", name:"CONNECT: REQUEST ACCESS", tag:"FORM", meta:"Access: Public · Risk: Low" }
           ]
         },
         guest: {
-          brief: "Simulation mode engaged. This environment is non-persistent and safe to explore.",
+          brief: "Uplink route selected. (placeholder — wire to Discord later)",
           missions: [
-            { id:"SIM-1", name:"SIMULATION: ZERO-THREAT ZONE", tag:"SAFE", meta:"Access: Guest · Risk: None" },
-            { id:"SIM-2", name:"SIMULATION: HUD CALIBRATION", tag:"CAL", meta:"Access: Guest · Risk: None" },
-            { id:"SIM-3", name:"SIMULATION: MOVEMENT PROTOCOL", tag:"DRILL", meta:"Access: Guest · Risk: Low" },
-            { id:"SIM-4", name:"SIMULATION: SYSTEM OVERVIEW", tag:"INFO", meta:"Access: Guest · Risk: None" }
+            { id:"U-01", name:"UPLINK: COMMUNITY NODE", tag:"JOIN", meta:"Access: External · Risk: None" },
+            { id:"U-02", name:"UPLINK: ANNOUNCEMENTS", tag:"NEWS", meta:"Access: External · Risk: None" },
+            { id:"U-03", name:"UPLINK: ROLES & RULES", tag:"READ", meta:"Access: External · Risk: None" },
+            { id:"U-04", name:"UPLINK: EVENTS", tag:"LIVE", meta:"Access: External · Risk: Low" }
           ]
         },
         pulse: {
-          brief: "PULSΞ channel opened. Broadcast layer is present but not defined yet.",
+          brief: "PULSΞ route selected. Broadcast layer placeholder.",
           missions: [
-            { id:"P-01", name:"BROADCAST: SIGNAL UPLINK", tag:"LIVE", meta:"Access: Channel · Risk: Medium" },
-            { id:"P-02", name:"OVERLAY: TRANSMISSION FRAME", tag:"HUD", meta:"Access: Channel · Risk: Low" },
-            { id:"P-03", name:"QUEUE: MESSAGE STACK", tag:"QUEUE", meta:"Access: Channel · Risk: Low" },
-            { id:"P-04", name:"ARCHIVE: PULSΞ LOGS", tag:"READ", meta:"Access: Channel · Risk: Low" }
+            { id:"P-01", name:"PULSΞ: SIGNAL UPLINK", tag:"LIVE", meta:"Access: Channel · Risk: Medium" },
+            { id:"P-02", name:"PULSΞ: TRANSMISSION FRAME", tag:"HUD", meta:"Access: Channel · Risk: Low" },
+            { id:"P-03", name:"PULSΞ: MESSAGE QUEUE", tag:"QUEUE", meta:"Access: Channel · Risk: Low" },
+            { id:"P-04", name:"PULSΞ: ARCHIVE", tag:"READ", meta:"Access: Channel · Risk: Low" }
           ]
         }
       };
 
-      const data = presets[route] || presets.guest;
+      const data = presets[route] || presets.login;
 
       briefing.textContent = data.brief;
       missionGrid.innerHTML = data.missions.map(m => `

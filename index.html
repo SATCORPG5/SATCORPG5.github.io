@@ -3,598 +3,383 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SATCORP</title>
-  <meta name="theme-color" content="#070713" />
+  <title>SATCORP // HYPΞRION</title>
+  <meta name="theme-color" content="#060610" />
 
   <style>
     :root{
-      /* KYRAX / Neon Wolf Theme */
-      --bg:#070713;
-      --bg2:#0a0a18;
-      --panel: rgba(16, 18, 40, .72);
-      --panel2: rgba(9, 10, 25, .60);
-      --line: rgba(120, 220, 255, .20);
-      --line2: rgba(190, 120, 255, .18);
+      --bg:#060610;
+      --bg2:#0b0b18;
+      --panel: rgba(12,14,30,.82);
+
+      --line: rgba(37,243,255,.22);
+      --line2: rgba(194,91,255,.18);
 
       --text:#f2f2ff;
       --muted:#b7b7d6;
 
       --cyan:#25f3ff;
-      --cyan2:#00c8ff;
       --violet:#9b5de5;
       --violet2:#c25bff;
+      --ember:#ff6a2a;
 
-      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
-      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: system-ui, -apple-system, Segoe UI, Roboto, Arial;
 
-      --radius: 16px;
+      --r: 16px;
       --t: 150ms;
-      --max: 1120px;
+      --max: 1180px;
     }
 
     *{ box-sizing:border-box; }
     html,body{ height:100%; }
+
     body{
       margin:0;
+      font-family: var(--sans);
+      color: var(--text);
       background:
         radial-gradient(1200px 700px at 20% 10%, rgba(37,243,255,.10), transparent 55%),
-        radial-gradient(1000px 600px at 80% 45%, rgba(194,91,255,.10), transparent 55%),
-        radial-gradient(700px 450px at 50% 85%, rgba(155,93,229,.08), transparent 55%),
+        radial-gradient(1000px 650px at 80% 45%, rgba(194,91,255,.10), transparent 55%),
         linear-gradient(180deg, var(--bg), var(--bg2));
-      color: var(--text);
-      font-family: var(--sans);
       overflow-x:hidden;
     }
 
-    a{ color:inherit; text-decoration:none; }
-
-    /* ---------- GLOBAL FX LAYERS ---------- */
+    /* FX */
     .fx-grid{
       position:fixed; inset:0;
       pointer-events:none;
       background:
         repeating-linear-gradient(to bottom,
-          rgba(255,255,255,.030) 0px,
-          rgba(255,255,255,.030) 1px,
+          rgba(255,255,255,.03) 0px,
+          rgba(255,255,255,.03) 1px,
           transparent 2px,
-          transparent 10px),
-        repeating-linear-gradient(to right,
-          rgba(37,243,255,.020) 0px,
-          rgba(37,243,255,.020) 1px,
-          transparent 2px,
-          transparent 18px);
-      opacity:.22;
+          transparent 10px);
+      opacity:.18;
       mix-blend-mode: overlay;
-      filter: blur(.0px);
     }
-
     .fx-vignette{
       position:fixed; inset:0;
       pointer-events:none;
       background:
-        radial-gradient(circle at 50% 40%, transparent 40%, rgba(0,0,0,.55) 88%),
-        radial-gradient(circle at 50% 50%, transparent 55%, rgba(0,0,0,.35) 100%);
-      opacity:.9;
+        radial-gradient(circle at 50% 40%, transparent 40%, rgba(0,0,0,.60) 90%);
     }
 
-    .fx-noise{
-      position:fixed; inset:-20%;
-      pointer-events:none;
-      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
-      opacity:.06;
-      transform: rotate(2deg);
-      mix-blend-mode: overlay;
-    }
-
-    /* ---------- KYRAX ONBOARDING ---------- */
-    .kyrwrap{
+    /* HUD */
+    .hud{
       min-height:100vh;
       display:grid;
       place-items:center;
-      padding: 18px;
-      position:relative;
+      padding:18px;
+    }
+
+    .frame{
+      width:min(var(--max), 96vw);
+      border-radius: var(--r);
+      background: linear-gradient(180deg, rgba(12,14,30,.85), rgba(6,7,16,.72));
+      border:1px solid var(--line);
+      box-shadow: 0 30px 90px rgba(0,0,0,.65);
       overflow:hidden;
     }
 
-    .kyrpanel{
-      width:min(920px, 94vw);
-      border-radius: var(--radius);
-      overflow:hidden;
-      position:relative;
-      z-index:1;
-
-      background:
-        linear-gradient(180deg, rgba(16,18,40,.78), rgba(9,10,25,.70));
-      border: 1px solid rgba(120,220,255,.20);
-
-      box-shadow:
-        0 28px 90px rgba(0,0,0,.62),
-        0 0 0 1px rgba(194,91,255,.10),
-        0 0 40px rgba(37,243,255,.08);
-    }
-
-    /* neon edge glow */
-    .kyrpanel::before{
-      content:"";
-      position:absolute; inset:-1px;
-      border-radius: var(--radius);
-      padding:1px;
-      background: linear-gradient(135deg, rgba(37,243,255,.65), rgba(155,93,229,.45), rgba(194,91,255,.60));
-      -webkit-mask:
-        linear-gradient(#000 0 0) content-box,
-        linear-gradient(#000 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      opacity:.55;
-      pointer-events:none;
-      filter: blur(.1px);
-    }
-
-    .kyrhead{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      align-items:baseline;
-
-      padding: 12px 14px;
-      border-bottom: 1px solid rgba(120,220,255,.18);
-
+    .top{
+      padding:12px 14px;
+      border-bottom:1px solid var(--line);
       font-family: var(--mono);
       letter-spacing:.16em;
       text-transform:uppercase;
-      font-size: 11px;
-      color: rgba(183,183,214,.92);
-      background:
-        linear-gradient(90deg, rgba(37,243,255,.06), transparent 40%),
-        linear-gradient(270deg, rgba(194,91,255,.06), transparent 40%);
+      font-size:11px;
+      display:flex;
+      justify-content:space-between;
+      color:var(--muted);
     }
 
-    .kyrhead b{
-      color: var(--text);
-      font-weight: 900;
-      letter-spacing:.12em;
-      text-shadow: 0 0 14px rgba(37,243,255,.15);
+    .top b{
+      color:var(--text);
+      font-weight:900;
     }
 
-    .kyrbody{
-      padding: 18px 16px 16px;
+    .grid{
+      padding:16px;
       display:grid;
-      grid-template-columns: 1.05fr .95fr;
-      gap: 14px;
-      align-items:end;
-    }
-
-    @media (max-width: 860px){
-      .kyrbody{ grid-template-columns: 1fr; align-items:start; }
-    }
-
-    .kyrleft{
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-    }
-
-    .brandRow{
-      display:flex;
-      align-items:center;
+      grid-template-columns: 1.1fr .9fr;
       gap:14px;
     }
 
+    @media(max-width:900px){
+      .grid{ grid-template-columns:1fr; }
+    }
+
+    .panel{
+      border:1px solid var(--line);
+      border-radius:var(--r);
+      background:rgba(0,0,0,.18);
+      padding:14px;
+    }
+
+    .idRow{
+      display:flex;
+      gap:14px;
+      align-items:center;
+    }
+
     .logo{
-      width:84px;
-      height:84px;
-      border-radius: 18px;
+      width:80px;
+      height:80px;
+      border-radius:18px;
+      background:rgba(0,0,0,.25);
+      border:1px solid var(--line);
       display:grid;
       place-items:center;
-      background: rgba(0,0,0,.20);
-      border: 1px solid rgba(37,243,255,.18);
-      box-shadow:
-        0 0 0 1px rgba(194,91,255,.10),
-        0 0 30px rgba(37,243,255,.10);
       overflow:hidden;
     }
 
     .logo img{
-      width:88%;
-      height:88%;
+      width:90%;
+      height:90%;
       object-fit:contain;
-      filter: drop-shadow(0 0 10px rgba(37,243,255,.22));
-      opacity:.98;
+      filter: drop-shadow(0 0 12px rgba(37,243,255,.3));
     }
 
-    .kyrtitle{
+    .title{
       margin:0;
-      font-weight: 950;
-      text-transform:uppercase;
+      font-weight:900;
       letter-spacing:.14em;
-      font-size: clamp(32px, 4.4vw, 46px);
-      line-height:1.02;
-
+      text-transform:uppercase;
+      font-size:40px;
       background: linear-gradient(90deg, var(--cyan), var(--violet2));
       -webkit-background-clip:text;
       background-clip:text;
-      color: transparent;
-
-      text-shadow:
-        0 0 16px rgba(37,243,255,.14),
-        0 0 22px rgba(194,91,255,.10);
+      color:transparent;
     }
 
-    .kyrsub{
-      margin: 8px 0 0;
-      color: rgba(183,183,214,.92);
-      font-family: var(--mono);
+    .sub{
+      font-family:var(--mono);
+      font-size:11px;
       letter-spacing:.12em;
       text-transform:uppercase;
-      font-size: 11px;
-      line-height:1.7;
+      color:var(--muted);
+      margin-top:6px;
     }
 
-    .note{
-      margin-top: 4px;
-      color: rgba(183,183,214,.84);
-      font-family: var(--mono);
-      letter-spacing:.10em;
-      text-transform:uppercase;
-      font-size: 10px;
-      line-height: 1.7;
+    .telemetry{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
     }
 
-    .tagline{
-      margin-top: 8px;
-      padding: 12px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(120,220,255,.14);
-      background: rgba(0,0,0,.14);
-      color: rgba(183,183,214,.95);
-      font-family: var(--mono);
-      font-size: 12px;
-      line-height: 1.75;
-      position:relative;
+    .card{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
+      font-family:var(--mono);
+      font-size:12px;
+    }
+
+    .box{
+      border:1px solid var(--line);
+      border-radius:var(--r);
+      background:rgba(0,0,0,.18);
       overflow:hidden;
     }
 
-    .tagline::before{
-      content:"";
-      position:absolute; inset:0;
-      background: linear-gradient(90deg, transparent, rgba(37,243,255,.06), transparent);
-      transform: translateX(-40%);
-      animation: sweep 2.8s linear infinite;
-      opacity:.7;
-      pointer-events:none;
-    }
-
-    @keyframes sweep{
-      0%{ transform: translateX(-55%); }
-      100%{ transform: translateX(55%); }
-    }
-
-    .kyrbox{
-      border: 1px solid rgba(120,220,255,.18);
-      background: rgba(0,0,0,.18);
-      border-radius: 14px;
-      overflow:hidden;
-      box-shadow: 0 0 0 1px rgba(194,91,255,.08);
-    }
-
-    .kyrboxhead{
-      padding: 10px 12px;
-      border-bottom: 1px solid rgba(120,220,255,.14);
-      font-family: var(--mono);
+    .boxhead{
+      padding:10px 12px;
+      border-bottom:1px solid var(--line);
+      font-family:var(--mono);
       letter-spacing:.16em;
       text-transform:uppercase;
-      font-size: 10px;
-      color: rgba(183,183,214,.92);
+      font-size:10px;
       display:flex;
       justify-content:space-between;
-      gap:10px;
-
-      background:
-        linear-gradient(90deg, rgba(37,243,255,.06), transparent 45%),
-        linear-gradient(270deg, rgba(194,91,255,.06), transparent 45%);
+      color:var(--muted);
     }
 
-    .status{
-      background: linear-gradient(90deg, rgba(37,243,255,.95), rgba(194,91,255,.95));
-      -webkit-background-clip:text;
-      background-clip:text;
-      color: transparent;
-      text-shadow: 0 0 16px rgba(37,243,255,.16);
-      font-weight: 900;
-    }
-
-    .kyrboxbody{
-      padding: 12px;
-      font-family: var(--mono);
-      font-size: 12px;
-      line-height: 1.75;
-      color: rgba(183,183,214,.92);
+    .log{
+      padding:12px;
+      font-family:var(--mono);
+      font-size:12px;
+      line-height:1.7;
       white-space:pre-wrap;
-      min-height: 120px;
+      min-height:160px;
+      max-height:260px;
+      overflow:auto;
     }
 
     .actions{
+      padding:12px;
       display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 12px;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
     }
 
     .btn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:10px;
-
-      padding: 12px 12px;
-      border-radius: 12px;
-
-      border: 1px solid rgba(120,220,255,.18);
-      background: rgba(0,0,0,.16);
-
-      color: var(--text);
-      font-family: var(--mono);
+      padding:12px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.18);
+      font-family:var(--mono);
       letter-spacing:.16em;
       text-transform:uppercase;
-      font-weight: 950;
-      font-size: 11px;
-
+      font-size:11px;
+      font-weight:900;
+      color:var(--text);
       cursor:pointer;
-      transition: transform var(--t) linear, border-color var(--t) linear, background var(--t) linear, box-shadow var(--t) linear;
-      user-select:none;
-      position:relative;
-      overflow:hidden;
-    }
-
-    .btn::before{
-      content:"";
-      position:absolute; inset:0;
-      background: linear-gradient(90deg, transparent, rgba(37,243,255,.10), transparent);
-      transform: translateX(-60%);
-      opacity:.0;
-      transition: opacity var(--t) linear;
-      pointer-events:none;
-    }
-
-    .btn:hover{
-      transform: translateY(-1px);
-      border-color: rgba(37,243,255,.38);
-      box-shadow: 0 0 0 1px rgba(194,91,255,.10), 0 0 20px rgba(37,243,255,.10);
-    }
-    .btn:hover::before{ opacity:.85; animation: btnSweep .9s linear infinite; }
-
-    @keyframes btnSweep{
-      0%{ transform: translateX(-60%); }
-      100%{ transform: translateX(60%); }
     }
 
     .btn.primary{
-      border-color: rgba(37,243,255,.46);
-      background: linear-gradient(180deg, rgba(37,243,255,.10), rgba(194,91,255,.08));
-      box-shadow: 0 0 0 1px rgba(37,243,255,.14);
-    }
-    .btn.primary:hover{
-      border-color: rgba(194,91,255,.52);
-      box-shadow: 0 0 0 1px rgba(194,91,255,.16), 0 0 28px rgba(194,91,255,.12);
+      background: linear-gradient(180deg, rgba(37,243,255,.12), rgba(194,91,255,.10));
     }
 
-    .btn.pulse{
-      border-color: rgba(194,91,255,.55);
-      background: rgba(194,91,255,.12);
-      box-shadow: 0 0 0 3px rgba(194,91,255,.10), 0 0 24px rgba(37,243,255,.08);
-      animation: pulse 1.45s linear infinite;
+    .btn.alert{
+      border-color: rgba(255,106,42,.45);
+      background: rgba(255,106,42,.12);
     }
 
-    @keyframes pulse{
-      0%,100%{ filter: brightness(1); }
-      50%{ filter: brightness(1.12); }
-    }
-
-    /* ---------- MAIN SITE SHELL (placeholder) ---------- */
+    /* MAIN SITE */
     .site{
       display:none;
       min-height:100vh;
-      padding: 18px 16px 64px;
-      max-width: var(--max);
-      margin: 0 auto;
+      padding:18px;
+      max-width:var(--max);
+      margin:auto;
     }
     .site.on{ display:block; }
 
     .topbar{
       display:flex;
       justify-content:space-between;
-      gap:10px;
-      align-items:center;
-      padding: 10px 0 16px;
-      border-bottom: 1px solid rgba(120,220,255,.14);
-    }
-
-    .brand{
-      font-family: var(--mono);
-      letter-spacing:.18em;
-      text-transform:uppercase;
-      font-weight: 950;
-      font-size: 12px;
-      background: linear-gradient(90deg, var(--cyan), var(--violet2));
-      -webkit-background-clip:text;
-      background-clip:text;
-      color: transparent;
-    }
-
-    .session{
-      font-family: var(--mono);
-      letter-spacing:.12em;
-      text-transform:uppercase;
-      font-size: 11px;
-      color: rgba(183,183,214,.92);
-    }
-
-    .panel{
-      margin-top: 16px;
-      border: 1px solid rgba(120,220,255,.16);
-      border-radius: var(--radius);
-      background: rgba(0,0,0,.16);
-      padding: 14px;
-      box-shadow: 0 0 0 1px rgba(194,91,255,.08);
-    }
-
-    .panel h2{
-      margin:0 0 10px;
-      font-family: var(--mono);
+      border-bottom:1px solid var(--line);
+      padding-bottom:14px;
+      margin-bottom:14px;
+      font-family:var(--mono);
       letter-spacing:.16em;
       text-transform:uppercase;
-      font-size: 11px;
-      color: rgba(183,183,214,.92);
-    }
-
-    .panel p{
-      margin:0;
-      color: rgba(183,183,214,.92);
-      line-height: 1.8;
-      font-family: var(--mono);
-      font-size: 12px;
+      font-size:11px;
     }
   </style>
 </head>
 
 <body>
-  <!-- FX -->
-  <div class="fx-grid" aria-hidden="true"></div>
-  <div class="fx-noise" aria-hidden="true"></div>
-  <div class="fx-vignette" aria-hidden="true"></div>
+<div class="fx-grid"></div>
+<div class="fx-vignette"></div>
 
-  <!-- KYRAX ONBOARDING -->
-  <main class="kyrwrap" id="kyrwrap">
-    <section class="kyrpanel" aria-label="KYRAX onboarding">
-      <header class="kyrhead">
-        <span><b>KYRAX</b> :: ENTRY SCREEN</span>
-        <span>STATUS: <b id="kyrStatus">UNDEFINED</b></span>
-      </header>
+<!-- KYRAX AI CONSOLE -->
+<main class="hud" id="kyrwrap">
+  <section class="frame">
+    <header class="top">
+      <span><b>KYRAX</b> :: HYPΞRION AI CORE</span>
+      <span>STATUS: <b id="kyrStatus">STANDBY</b></span>
+    </header>
 
-      <div class="kyrbody">
-        <div class="kyrleft">
-          <div class="brandRow">
-            <div class="logo" aria-label="KYRAX logo">
-              <!-- Put your wolf logo file next to index.html and name it kyrax-wolf.png -->
-              <img src="kyrax-wolf.png" alt="KYRAX Wolf Logo" onerror="this.style.display='none'">
-            </div>
-
-            <div>
-              <h1 class="kyrtitle">KYRAX</h1>
-              <p class="kyrsub">SATCORP ENTRY / ONBOARDING INTERFACE</p>
-              <div class="note">
-                NEON PROTOCOL ACTIVE · SIGNAL LOCKED · AWAITING OPERATOR INPUT
-              </div>
-            </div>
+    <div class="grid">
+      <!-- LEFT -->
+      <div class="panel">
+        <div class="idRow">
+          <div class="logo">
+            <img src="kyrax-wolf.png" alt="KYRAX">
           </div>
-
-          <div class="tagline">
-            [KYRAX] Interface skin aligned to Wolf-Neon doctrine.<br>
-            Choose a route. Selection is stored. Main shell loads for testing.
+          <div>
+            <h1 class="title">KYRAX</h1>
+            <div class="sub">IN-GAME AI INTERFACE</div>
           </div>
         </div>
 
-        <div>
-          <div class="kyrbox">
-            <div class="kyrboxhead">
-              <span>OPERATOR OPTIONS</span>
-              <span class="status" id="kyrMsg">Awaiting input</span>
-            </div>
-            <div class="kyrboxbody" id="kyrLog">
-[KYRAX] Onboarding loaded.
-[KYRAX] Choose an option to proceed.
-            </div>
-          </div>
-
-          <div class="actions">
-            <button class="btn" data-act="login" type="button">LOG IN</button>
-            <button class="btn" data-act="signup" type="button">SIGN UP</button>
-            <button class="btn primary" data-act="guest" type="button">VIEW AS GUEST</button>
-            <button class="btn pulse" data-act="pulse" type="button">PULSΞ</button>
-          </div>
-
-          <div class="note">
-            Current: selections move to main site shell (placeholder).
-          </div>
+        <div class="telemetry">
+          <div class="card">NODE: HYPΞRION CORE</div>
+          <div class="card">UPLINK: STABLE</div>
+          <div class="card">THREAT INDEX: LOW</div>
+          <div class="card" id="operator">OPERATOR: UNASSIGNED</div>
         </div>
       </div>
-    </section>
-  </main>
 
-  <!-- MAIN SITE (placeholder) -->
-  <section class="site" id="site">
-    <div class="topbar">
-      <div class="brand">SATCORP</div>
-      <div class="session" id="session">SESSION: —</div>
-    </div>
-
-    <div class="panel">
-      <h2>MAIN WEBSITE</h2>
-      <p>
-        This is the main site shell. The onboarding selection was stored so we can define
-        real behavior later (login/signup/guest/pulsΞ routing).
-      </p>
-    </div>
-
-    <div class="panel">
-      <h2>STORED SELECTION</h2>
-      <p id="stored">—</p>
+      <!-- RIGHT -->
+      <div class="box">
+        <div class="boxhead">
+          <span>KYRAX TRANSMISSION</span>
+          <span id="kyrMsg">STANDBY</span>
+        </div>
+        <div class="log" id="kyrLog">
+[KYRAX] AI core initialized.
+[KYRAX] Neural mesh online.
+        </div>
+        <div class="actions">
+          <button class="btn" data-act="login">AUTHENTICATE</button>
+          <button class="btn" data-act="signup">NEW OPERATOR</button>
+          <button class="btn primary" data-act="guest">SIMULATION MODE</button>
+          <button class="btn alert" data-act="pulse">PULSΞ</button>
+        </div>
+      </div>
     </div>
   </section>
+</main>
 
-  <script>
-    // Minimal behavior (no assumptions beyond requirements):
-    // - show KYRAX onboarding first
-    // - allow selecting options
-    // - store selection
-    // - proceed to main site shell (placeholder)
+<!-- MAIN SITE PLACEHOLDER -->
+<section class="site" id="site">
+  <div class="topbar">
+    <span>HYPΞRION</span>
+    <span id="session">SESSION: —</span>
+  </div>
+  <p id="stored"></p>
+</section>
 
-    const kyrStatus = document.getElementById("kyrStatus");
-    const kyrMsg = document.getElementById("kyrMsg");
-    const kyrLog = document.getElementById("kyrLog");
-    const site = document.getElementById("site");
-    const kyrwrap = document.getElementById("kyrwrap");
-    const session = document.getElementById("session");
-    const stored = document.getElementById("stored");
+<script>
+/* ========= TYPEWRITER KYRAX STANDBY ========= */
+const kyrLog = document.getElementById("kyrLog");
+const kyrStatus = document.getElementById("kyrStatus");
+const kyrMsg = document.getElementById("kyrMsg");
+const operatorEl = document.getElementById("operator");
+const site = document.getElementById("site");
+const kyrwrap = document.getElementById("kyrwrap");
+const session = document.getElementById("session");
+const stored = document.getElementById("stored");
 
-    const KEY = "kyrChoice_v1";
+let running = true;
+const lines = [
+  "[KYRAX] STANDING BY…",
+  "[KYRAX] LISTENING FOR OPERATOR INPUT…",
+  "[KYRAX] AWAITING ROUTE SELECTION…"
+];
 
-    function log(line){
-      kyrLog.textContent += "\n" + line;
-      kyrLog.scrollTop = kyrLog.scrollHeight;
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+async function typeLoop(){
+  let i=0;
+  while(running){
+    const line = lines[i%lines.length];
+    let out="";
+    kyrLog.textContent += "\n";
+    for(let c of line){
+      out+=c;
+      kyrLog.textContent = kyrLog.textContent.split("\n").slice(0,-1).join("\n")+"\n"+out+"▍";
+      await sleep(22);
     }
+    kyrLog.textContent = kyrLog.textContent.replace("▍","");
+    await sleep(800);
+    i++;
+  }
+}
+typeLoop();
 
-    function enterMain(choice){
-      localStorage.setItem(KEY, choice);
+/* ========= BUTTON ROUTING ========= */
+document.querySelectorAll("[data-act]").forEach(btn=>{
+  btn.onclick=()=>{
+    running=false;
+    const act = btn.dataset.act;
+    kyrStatus.textContent="ROUTE";
+    kyrMsg.textContent="SET";
+    operatorEl.textContent="OPERATOR: ACTIVE";
+    kyrLog.textContent+="\n[KYRAX] ROUTE SELECTED: "+act.toUpperCase();
 
-      // update main shell
-      const label = choice.toUpperCase();
-      session.textContent = "SESSION: " + label;
-      stored.textContent = "kyrChoice_v1 = " + choice;
+    localStorage.setItem("kyrChoice_v1",act);
+    session.textContent="SESSION: "+act.toUpperCase();
+    stored.textContent="kyrChoice_v1 = "+act;
 
-      // swap screens
-      kyrwrap.style.display = "none";
-      site.classList.add("on");
-    }
-
-    document.querySelectorAll("[data-act]").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        const act = btn.getAttribute("data-act");
-
-        if (act === "pulse"){
-          kyrStatus.textContent = "PULSΞ: UNDEFINED";
-          kyrMsg.textContent = "PULSΞ pressed (undefined)";
-          log("[KYRAX] PULSΞ pressed. Behavior not defined.");
-          enterMain("pulse");
-          return;
-        }
-
-        kyrStatus.textContent = "SELECTED";
-        kyrMsg.textContent = "Selected: " + act;
-        log("[KYRAX] Option selected: " + act);
-        enterMain(act);
-      });
-    });
-  </script>
+    kyrwrap.style.display="none";
+    site.classList.add("on");
+  };
+});
+</script>
 </body>
 </html>

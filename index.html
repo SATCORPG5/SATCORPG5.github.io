@@ -96,6 +96,7 @@
       justify-content:space-between;
       gap: 12px;
       color: var(--muted);
+      min-height: 52px;
     }
     .top b{ color:var(--text); font-weight:900; }
 
@@ -128,9 +129,9 @@
     .fill{
       height:100%;
       width:0%;
-      background: linear-gradient(90deg, rgba(37,243,255,.95), rgba(194,91,255,.85));
+      background: linear-gradient(90deg, rgba(37,243,255,.95), rgba(37,243,255,.70));
       box-shadow: 0 0 18px rgba(37,243,255,.22);
-      transition: width 120ms linear;
+      transition: width 80ms linear;
     }
     .pct{
       font-family: var(--mono);
@@ -143,20 +144,30 @@
       white-space:nowrap;
     }
 
+    /* Main grid (hidden until bootbar completes) */
     .grid{
       padding: var(--padInner);
       display:grid;
       grid-template-columns: 1.15fr .85fr;
       gap: var(--gap);
       flex:1;
-      align-items:stretch; /* 🔥 makes inner boxes correctly bigger */
+      align-items:stretch;
+      opacity:0;
+      transform: translateY(8px);
+      transition: opacity 240ms ease, transform 240ms ease;
+      pointer-events:none;
     }
+    .grid.show{
+      opacity:1;
+      transform: translateY(0);
+      pointer-events:auto;
+    }
+
     @media(max-width: 1100px){
       .grid{ grid-template-columns:1fr; }
       .frame{ min-height: 0; }
     }
 
-    /* Make BOTH inner sections fill */
     .panel, .box{
       height:100%;
       min-height: clamp(360px, 48vh, 560px);
@@ -220,7 +231,6 @@
       text-transform: none;
     }
 
-    /* Optional: roomy “status cards” area (keeps panel feeling big) */
     .statusGrid{
       margin-top: 8px;
       display:grid;
@@ -283,7 +293,7 @@
       font-size: var(--log);
       line-height: 1.85;
       white-space:pre-wrap;
-      flex:1;                  /* 🔥 makes log expand properly */
+      flex:1;
       min-height: 220px;
     }
 
@@ -485,7 +495,8 @@
   <main class="hud" id="kyrwrap">
     <section class="frame">
       <header class="top">
-        <span><b>KYRAX</b> :: HYPΞRION AI CORE</span>
+        <!-- LEFT: typing header text -->
+        <span><b id="welcomeText"></b></span>
         <span>STATUS: <b id="kyrStatus">BOOT</b></span>
       </header>
 
@@ -496,7 +507,7 @@
         <div class="pct" id="bootPct">0%</div>
       </div>
 
-      <div class="grid">
+      <div class="grid" id="mainGrid">
         <!-- LEFT BIG PANEL -->
         <div class="panel">
           <div class="idRow">
@@ -509,7 +520,6 @@
             </div>
           </div>
 
-          <!-- Optional big “status” area to make panel feel correctly sized -->
           <div class="statusGrid" aria-label="System readouts">
             <div class="statusCard">
               <div class="k">NODE</div>
@@ -569,9 +579,7 @@
             <button class="cta" type="button">ARCHIVE</button>
           </div>
 
-          <div class="missionGrid" id="missionGrid">
-            <!-- filled by JS -->
-          </div>
+          <div class="missionGrid" id="missionGrid"></div>
         </div>
 
         <div class="block">
@@ -597,23 +605,15 @@
     const uplinkReadout = document.getElementById("uplinkReadout");
     const operatorReadout = document.getElementById("operatorReadout");
 
+    const welcomeTextEl = document.getElementById("welcomeText");
+    const mainGrid = document.getElementById("mainGrid");
+
     const site = document.getElementById("site");
     const kyrwrap = document.getElementById("kyrwrap");
     const session = document.getElementById("session");
     const stored = document.getElementById("stored");
     const missionGrid = document.getElementById("missionGrid");
     const briefing = document.getElementById("briefing");
-
-    // Required sequence behavior:
-    // 1) Type "[KYRAX] Uplink negotiation…" at normal speed
-    // 2) Short pause
-    // 3) Append " STABLE" instantly (not typed)
-    // 4) Type "[KYRAX] Standing by..." on next line
-    // 5) After both are present, nothing disappears and nothing repeats
-
-    const TYPE_SPEED = 55;
-    const PAUSE_BEFORE_STABLE = 450;
-    const PAUSE_BEFORE_STANDBY = 250;
 
     const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -623,58 +623,83 @@
       bootPct.textContent = clamped + "%";
     }
 
-    async function typeLine(line, onStep){
+    async function typeText(el, text, speed){
+      el.textContent = "";
       let out = "";
-      for (let i = 0; i < line.length; i++){
-        out += line[i];
-        kyrLog.textContent = out;
-        if (onStep) onStep(i + 1, line.length);
-        await sleep(TYPE_SPEED);
+      for (const c of text){
+        out += c;
+        el.textContent = out;
+        await sleep(speed);
       }
-      return out;
     }
 
-    async function sequence(){
+    // 1) Boot bar fills FIRST, while rest of panel stays hidden
+    async function bootBarFill(){
+      setProgress(0);
+      // "normal fast" speed: ~1.6s total
+      const durationMs = 1600;
+      const stepMs = 30;
+      const steps = Math.ceil(durationMs / stepMs);
+
+      for (let i = 0; i <= steps; i++){
+        const p = (i / steps) * 100;
+        setProgress(p);
+        await sleep(stepMs);
+      }
+      setProgress(100);
+    }
+
+    // 2) After bar fill, show the rest, then run typing sequence in log
+    async function runSequence(){
+      // Header typing (stays)
+      await typeText(welcomeTextEl, "WELCOME TO SATCORP", 55);
+
+      // Show main panel contents now
+      mainGrid.classList.add("show");
+
+      // Required log behavior
       const line1Base = "[KYRAX] Uplink negotiation…";
       const line2 = "[KYRAX] Standing by...";
 
+      const TYPE_SPEED = 55;
+      const PAUSE_BEFORE_STABLE = 450;
+      const PAUSE_BEFORE_STANDBY = 250;
+
       kyrStatus.textContent = "BOOT";
       kyrMsg.textContent = "LINKING";
-      setProgress(0);
       uplinkReadout.textContent = "NEGOTIATING";
       operatorReadout.textContent = "UNASSIGNED";
+      kyrLog.textContent = "";
 
-      // Phase A: type line1Base (0% -> 62%)
-      await typeLine(line1Base, (i, total) => {
-        const p = (i / total) * 62;
-        setProgress(p);
-      });
-
-      // Pause then append STABLE instantly (jump to 74%)
-      await sleep(PAUSE_BEFORE_STABLE);
-      kyrLog.textContent = line1Base + " STABLE\n";
-      uplinkReadout.textContent = "STABLE";
-      setProgress(74);
-
-      // Phase B: type line2 (74% -> 100%)
-      await sleep(PAUSE_BEFORE_STANDBY);
+      // Type line1Base
       let out = "";
-      for (let i = 0; i < line2.length; i++){
-        out += line2[i];
-        kyrLog.textContent = line1Base + " STABLE\n" + out;
-        const p = 74 + (i / line2.length) * 26;
-        setProgress(p);
+      for (const c of line1Base){
+        out += c;
+        kyrLog.textContent = out;
         await sleep(TYPE_SPEED);
       }
 
-      setProgress(100);
+      // Pause then append STABLE instantly
+      await sleep(PAUSE_BEFORE_STABLE);
+      kyrLog.textContent = line1Base + " STABLE\n";
+      uplinkReadout.textContent = "STABLE";
+
+      // Type line2 under it
+      await sleep(PAUSE_BEFORE_STANDBY);
+      out = "";
+      for (const c of line2){
+        out += c;
+        kyrLog.textContent = line1Base + " STABLE\n" + out;
+        await sleep(TYPE_SPEED);
+      }
+
+      // Finish
       kyrStatus.textContent = "STANDBY";
       kyrMsg.textContent = "IDLE";
       actions.classList.remove("locked");
     }
 
     function buildMissions(route){
-      const r = route.toUpperCase();
       const presets = {
         login: {
           brief: "Authenticated route selected. Operator privileges will be applied to mission nodes.",
@@ -729,8 +754,14 @@
       `).join("");
     }
 
-    // Run boot/typing sequence
-    sequence();
+    // Orchestrate: fill bar -> type header -> show panel -> run sequence
+    (async ()=>{
+      // Hide panel content until bar is done
+      mainGrid.classList.remove("show");
+
+      await bootBarFill();
+      await runSequence();
+    })();
 
     // Buttons
     document.querySelectorAll("[data-act]").forEach(btn=>{
@@ -740,10 +771,8 @@
         const act = btn.getAttribute("data-act");
         const label = act.toUpperCase();
 
-        // Store route
         localStorage.setItem("kyrChoice_v1", act);
 
-        // Move to mission shell
         session.textContent = "SESSION: " + label;
         stored.textContent = "ROUTE: " + label + "  //  KEY: kyrChoice_v1 = " + act;
 
